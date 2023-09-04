@@ -1,0 +1,1691 @@
+SET ThousandSep=' ';
+SET DecimalSep='.';
+SET MoneyThousandSep=' ';
+SET MoneyDecimalSep=',';
+SET MoneyFormat='R # ##1,11;R-# ##1,11';
+SET TimeFormat='hh:mm:ss TT';
+SET DateFormat='YYYY/MM/DD';
+SET TimestampFormat='YYYY/MM/DD hh:mm:ss[.fff] TT';
+SET MonthNames='Jan;Feb;Mar;Apr;May;Jun;Jul;Aug;Sep;Oct;Nov;Dec';
+SET DayNames='Mon;Tue;Wed;Thu;Fri;Sat;Sun';
+SET vDataLoad='C:\Users\HenryM\Desktop\MIS Team\AW Files_Henry\';
+
+
+[AuA_TMP]:
+//AIMS
+LOAD  
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') & '|' & applymap('Map Partner',[BrokerName],[BrokerName])  & '|' & ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) & '|' & ApplyMap('Map Client',InvestorRegName,InvestorRegName)  as [KeyAuA], 
+     ApplyMap('Map Partner',[BrokerName],[BrokerName]) as Partner,
+     ApplyMap('BDM_Mapping',ApplyMap('Map Partner',[BrokerName],[BrokerName]),'To be mapped') as BDM,
+     ApplyMap('Map Client',ApplyMap('Map Partner',BrokerName,BrokerName)&'|'&Upper(InvestorRegName),Upper(InvestorRegName)) as AwxClient, 
+     ApplyMap('Map Xplan ID',ApplyMap('Map Partner',BrokerName,BrokerName)&'|'&Upper(InvestorRegName),Upper(InvestorRegName)) as EntityID, 
+	 if(isnum(ApplyMap('Map Xplan ID',ApplyMap('Map Partner',BrokerName,BrokerName)&'|'&Upper(InvestorRegName),Upper(InvestorRegName))), 'Mapped','Unmapped') as [Client Name Map Eval],  
+     Upper(InvestorRegName) as SourceClient,
+	 //InvestorID as ClientRSAID, 
+     Upper(Trim(ProductName)) as Product,
+     Upper(Trim(FundName)) as FundNameSource,
+     ApplyMap('Fund_Mapping_FundGroup',[Fund Group Lookup],'To be mapped') as FundGroup,
+     ApplyMap('Fund_Mapping_FeeGenerating',[Fund Group Lookup],[Fund Group Lookup]) as [Fee Generating],
+     MarketValue as AssetValue,
+     ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) as 'ProductProvider',
+     'ALG' as check,
+     ApplyMap('CashProductProvider',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Exclude Cash],
+     ApplyMap('ProductProviderType',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Type],
+     ContractNumber as PolicyNumber,
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') as DateMonth,
+     FSP,
+     [FSP Broker Code]
+FROM
+[$(vDataLoad)*AW - AIMS.xlsx]
+(ooxml, embedded labels, table is Sheet1);
+
+
+
+
+
+//Allan Gray
+Concatenate(AuA_TMP)
+LOAD  
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') & '|' & ApplyMap('Map Partner',[Broker Name],[Broker Name])& '|' & Subfield(FileBaseName(), '- ', 2) & '|' & ApplyMap('Map Client',AGClient,AGClient)  as [KeyAuA], 
+     ApplyMap('Map Partner',[Broker Name],[Broker Name]) as Partner, 
+     ApplyMap('BDM_Mapping', ApplyMap('Map Partner',[Broker Name],[Broker Name]) ,'To be mapped') as BDM,
+     [AccountNumber] as PolicyNumber,  
+     ApplyMap('Map Client',ApplyMap('Map Partner',[Broker Name],[Broker Name])&'|'&Upper(AGClient),Upper(AGClient)) as  AwxClient,
+     ApplyMap('Map Xplan ID',ApplyMap('Map Partner',[Broker Name],[Broker Name])&'|'&Upper(AGClient),Upper(AGClient)) as EntityID,
+	 if(isnum(ApplyMap('Map Xplan ID',ApplyMap('Map Partner',[Broker Name],[Broker Name])&'|'&Upper(AGClient),Upper(AGClient))), 'Mapped','Unmapped') as [Client Name Map Eval],
+     if(Upper(AGClient)=Upper('DE-IDENTIFIED DE-IDENTIFIED') or Upper('DE-IDENTIFIED'), [ClientNumber]&'|'& Subfield(FileBaseName(), '- ', 2),Upper(AGClient))  as SourceClient,
+     //[ID Number] as ClientRSAID, 
+     Upper(Trim(Product)) as Product,  
+     Upper(Trim(Fund)) as FundNameSource,
+     ApplyMap('Fund_Mapping_FundGroup',Upper(Trim(Fund)),'To be mapped') as FundGroup,
+     ApplyMap('Fund_Mapping_FeeGenerating',Upper(Trim(Fund)),Upper(Trim(Fund))) as [Fee Generating], 
+     Amount as AssetValue, 
+     ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) as 'ProductProvider',
+     'ALG' as check,
+     ApplyMap('CashProductProvider',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Exclude Cash],
+     ApplyMap('ProductProviderType',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Type],
+      Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') as DateMonth,
+     FSP,
+     [FSP Broker Code]
+FROM
+[$(vDataLoad)*AW - Allan Gray.xlsx]
+(ooxml, embedded labels, table is Sheet1);
+
+
+
+
+
+//Allan Grey EB
+Concatenate(AuA_TMP)
+LOAD 
+      Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') & '|' & ApplyMap('Map Partner',[Advisor Name],[Advisor Name])& '|' & ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) & '|' & ApplyMap('Map Client',ClientName,ClientName) as [KeyAuA],
+      ApplyMap('Map Partner',[Advisor Name],[Advisor Name]) as Partner,
+      ApplyMap('BDM_Mapping',ApplyMap('Map Partner',[Advisor Name],[Advisor Name]) ,'To be mapped') as BDM,
+      ApplyMap('Map Client',ApplyMap('Map Partner',[Advisor Name],[Advisor Name])&'|'&Upper(ClientName),Upper(ClientName)) as AwxClient,
+      ApplyMap('Map Xplan ID',ApplyMap('Map Partner',[Advisor Name],[Advisor Name])&'|'&Upper(ClientName),Upper(ClientName)) as EntityID,
+      if(isnum(ApplyMap('Map Xplan ID',ApplyMap('Map Partner',[Advisor Name],[Advisor Name])&'|'&Upper(ClientName),Upper(ClientName))), 'Mapped','Unmapped') as [Client Name Map Eval],
+      ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) as 'ProductProvider',
+      'ALG' as check,
+      ApplyMap('CashProductProvider',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Exclude Cash],
+      ApplyMap('ProductProviderType',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Type],
+      Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') as DateMonth,
+      Upper(ClientName) as SourceClient,
+      [Amount] as AssetValue,
+      Upper(Trim('No fund information available')) as FundNameSource,
+      ApplyMap('Fund_Mapping_FundGroup',Upper(Trim('No fund information available')),'To be mapped') as FundGroup,
+      ApplyMap('Fund_Mapping_FeeGenerating',Upper(Trim('No fund information available')),Upper(Trim('No fund information available'))) as [Fee Generating], 
+        Upper(Trim('PRODUCT INFORMATION IS NOT AVAILABLE')) as Product,
+      FSP,
+      [FSP Broker Code]
+FROM
+[$(vDataLoad)*AW - Allan Gray EB.xlsx]
+(ooxml, embedded labels, table is Sheet1);     
+
+
+
+
+//Asburton UT
+Concatenate(AuA_TMP)
+LOAD
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') & '|' &  ApplyMap('Map Partner',[Financial advisor name],[Financial advisor name]) & '|' & Subfield(FileBaseName(), '- ', 2) & '|' & ApplyMap('Map Client',[Investor name],[Investor name]) as [KeyAuA],
+     ApplyMap('Map Partner',[Financial advisor name],[Financial advisor name]) as Partner,
+     ApplyMap('BDM_Mapping', ApplyMap('Map Partner',[Financial advisor name],[Financial advisor name]),'To be mapped') as BDM,
+     ApplyMap('Map Client',ApplyMap('Map Partner',[Financial advisor name],[Financial advisor name])&'|'&Upper([Investor name]),Upper([Investor name])) as AwxClient,
+     ApplyMap('Map Xplan ID',ApplyMap('Map Partner',[Financial advisor name],[Financial advisor name])&'|'&Upper([Investor name]),Upper([Investor name])) as EntityID, 
+	 if(isnum(ApplyMap('Map Xplan ID',ApplyMap('Map Partner',[Financial advisor name],[Financial advisor name])&'|'&Upper([Investor name]),Upper([Investor name]))), 'Mapped','Unmapped') as [Client Name Map Eval],
+     Upper([Investor name]) as SourceClient,
+     [Investor number] as PolicyNumber, 
+     Upper(Trim(Investment)) as Product,  
+     Upper(Trim([Fund name])) as FundNameSource,
+     ApplyMap('Fund_Mapping_FundGroup',Upper(Trim([Fund name])),'To be mapped') as FundGroup,
+     ApplyMap('Fund_Mapping_FeeGenerating',Upper(Trim([Fund name])),Upper(Trim([Fund name]))) as [Fee Generating], 
+     [Market value] as AssetValue, 
+     ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) as 'ProductProvider',
+     'ALG' as check,
+     ApplyMap('CashProductProvider',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Exclude Cash],
+     ApplyMap('ProductProviderType',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Type],
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') as DateMonth,
+     FSP,
+     [FSP Broker Code]
+FROM
+[$(vDataLoad)*AW - Ashburton UT.xlsx]
+(ooxml, embedded labels, table is Sheet1);
+
+
+
+
+
+//Ashburton International
+Concatenate(AuA_TMP)
+LOAD
+    Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') & '|' &  ApplyMap('Map Partner',Partner,Partner)  & '|' & Subfield(FileBaseName(), '- ', 2) & '|' &  ApplyMap('Map Client',Client,Client) as [KeyAuA],
+     ApplyMap('Map Partner',Partner,Partner) as Partner,
+     ApplyMap('BDM_Mapping',ApplyMap('Map Partner',Partner,Partner) ,'To be mapped') as BDM,
+     ApplyMap('Map Client',ApplyMap('Map Partner',Partner,Partner)&'|'&Upper(Client),Upper(Client)) as AwxClient, 
+     ApplyMap('Map Xplan ID',ApplyMap('Map Partner',Partner,Partner)&'|'&Upper(Client),Upper(Client)) as EntityID, 
+	 if(isnum(ApplyMap('Map Xplan ID',ApplyMap('Map Partner',Partner,Partner)&'|'&Upper(Client),Upper(Client))), 'Mapped','Unmapped') as [Client Name Map Eval],
+     Upper(Client) as SourceClient,
+     [PolicyNumber],
+     Upper(Trim('PRODUCT INFORMATION IS NOT AVAILABLE')) as Product, 
+     Upper(Trim(Fund)) as FundNameSource,
+     ApplyMap('Fund_Mapping_FundGroup',Upper(Trim(Fund)),'To be mapped') as FundGroup,
+     ApplyMap('Fund_Mapping_FeeGenerating',Upper(Trim(Fund)),Upper(Trim(Fund))) as [Fee Generating], 
+     Amount as AssetValue,
+     ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) as 'ProductProvider',
+     'ALG' as check,
+     ApplyMap('CashProductProvider',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Exclude Cash],
+     ApplyMap('ProductProviderType',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Type], 
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') as DateMonth,
+     FSP,
+     [FSP Broker Code]
+FROM
+[$(vDataLoad)*AW - Ashburton International.xlsx]
+(ooxml, embedded labels, table is Sheet1);
+
+
+
+
+
+//Ashburton LISP
+Concatenate(AuA_TMP)
+LOAD
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') & '|' &  ApplyMap('Map Partner',[Financial Advisor],[Financial Advisor]) & '|' & Subfield(FileBaseName(), '- ', 2) & '|' & ApplyMap('Map Client',Investor,Investor)as [KeyAuA],
+     ApplyMap('Map Partner',[Financial Advisor],[Financial Advisor]) as Partner,
+     ApplyMap('BDM_Mapping',ApplyMap('Map Partner',[Financial Advisor],[Financial Advisor]) ,'To be mapped') as BDM,
+     ApplyMap('Map Client',ApplyMap('Map Partner',[Financial Advisor],[Financial Advisor])&'|'&Upper(Investor),Upper(Investor)) as AwxClient, 
+     ApplyMap('Map Xplan ID',ApplyMap('Map Partner',[Financial Advisor],[Financial Advisor])&'|'&Upper(Investor),Upper(Investor)) as EntityID, 
+	 if(isnum(ApplyMap('Map Xplan ID',ApplyMap('Map Partner',[Financial Advisor],[Financial Advisor])&'|'&Upper(Investor),Upper(Investor))), 'Mapped','Unmapped') as [Client Name Map Eval], 
+     Upper(Investor) as SourceClient,
+     Upper(Trim(Product)) as Product,
+     [Deal Id] as PolicyNumber, 
+     Upper(Trim(if(Instrument = '' or len(trim(Instrument))=0 or Instrument = '-','No fund information available',Instrument))) as FundNameSource,
+     ApplyMap('Fund_Mapping_FundGroup',Upper(Trim(if(Instrument = '' or len(trim(Instrument))=0 or Instrument = '-','No fund information available',Instrument))),'To be mapped') as FundGroup,
+     ApplyMap('Fund_Mapping_FeeGenerating',Upper(Trim(if(Instrument = '' or len(trim(Instrument))=0 or Instrument = '-','No fund information available',Instrument))),Upper(Trim(if(Instrument = '' or len(trim(Instrument))=0 or Instrument = '-','No fund information available',Instrument)))) as [Fee Generating],  
+     [Instrument Value] as AssetValue, 
+     ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) as 'ProductProvider',
+     'ALG' as check,
+     ApplyMap('CashProductProvider',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Exclude Cash],
+     ApplyMap('ProductProviderType',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Type],
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') as DateMonth,
+     FSP,
+     [FSP Broker Code]
+FROM
+[$(vDataLoad)*AW - Ashburton LISP.xlsx]
+(ooxml, embedded labels, table is Sheet1);
+
+
+
+
+
+//Cadiz UT
+Concatenate(AuA_TMP)
+LOAD 
+	 Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') & '|' &  ApplyMap('Map Partner',[BrokerName],[BrokerName]) & '|' & ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) & '|' & ApplyMap('Map Client',Name,Name)as [KeyAuA],
+	 ApplyMap('Map Client',ApplyMap('Map Partner',BrokerName,BrokerName)&'|'&Upper(Name),Upper(Name)) as AwxClient, 
+	 ApplyMap('Map Xplan ID',ApplyMap('Map Partner',BrokerName,BrokerName)&'|'&Upper(Name),Upper(Name)) as EntityID, 
+	 if(isnum(ApplyMap('Map Xplan ID',ApplyMap('Map Partner',BrokerName,BrokerName)&'|'&Upper(Name),Upper(Name))), 'Mapped','Unmapped') as [Client Name Map Eval], 
+	 Upper(Name) as SourceClient,
+	 [Investor number] as PolicyNumber, 
+	 Value as AssetValue, 
+	 Upper(Trim(Fund)) as FundNameSource,
+	 ApplyMap('Fund_Mapping_FundGroup',Upper(Trim(Fund)),'To be mapped') as FundGroup,
+	 ApplyMap('Fund_Mapping_FeeGenerating',Upper(Trim(Fund)),Upper(Trim(Fund))) as [Fee Generating],
+	 Upper(Trim(Investment)) as Product, 
+	 ApplyMap('Map Partner',BrokerName,BrokerName) as Partner,
+	 ApplyMap('BDM_Mapping', ApplyMap('Map Partner',BrokerName,BrokerName),'To be mapped') as BDM,
+	 ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) as 'ProductProvider',
+     'ALG' as check,
+     ApplyMap('CashProductProvider',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Exclude Cash],
+     ApplyMap('ProductProviderType',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Type],
+	 Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') as DateMonth,
+	 FSP,
+	 [FSP Broker Code]
+FROM
+[$(vDataLoad)*AW - Cadiz UT.xlsx]
+(ooxml, embedded labels, table is Sheet1);
+
+
+
+
+
+//Coronation UT
+Concatenate(AuA_TMP)
+LOAD
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') & '|' &  ApplyMap('Map Partner', [Broker Name], [Broker Name])  & '|' & ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) & '|' &  ApplyMap('Map Client',[Investor Name],[Investor Name])  as [KeyAuA],
+     ApplyMap('Map Client',ApplyMap('Map Partner',[Broker Name],[Broker Name])&'|'&Upper([Investor Name]),Upper([Investor Name])) as AwxClient, //***************
+     ApplyMap('Map Xplan ID',ApplyMap('Map Partner',[Broker Name],[Broker Name])&'|'&Upper([Investor Name]),Upper([Investor Name])) as EntityID, //***************
+	 if(isnum(ApplyMap('Map Xplan ID',ApplyMap('Map Partner',[Broker Name],[Broker Name])&'|'&Upper([Investor Name]),Upper([Investor Name]))), 'Mapped','Unmapped') as [Client Name Map Eval],//***************
+     Upper([Investor Name]) as SourceClient,
+     //[ID Number] as ClientRSAID, 
+     [Investor Acc No] as PolicyNumber,
+     Upper(Trim('PRODUCT INFORMATION IS NOT AVAILABLE')) as Product,   
+     Upper(Trim([Fund Name])) as FundNameSource,
+     ApplyMap('Fund_Mapping_FundGroup',Upper(Trim([Fund Name])),'To be mapped') as FundGroup, 
+     ApplyMap('Fund_Mapping_FeeGenerating',Upper(Trim([Fund Name])),Upper(Trim([Fund Name]))) as [Fee Generating],
+     [Market Value] as AssetValue,
+     ApplyMap('Map Partner', [Broker Name], [Broker Name]) as Partner,
+     ApplyMap('BDM_Mapping',ApplyMap('Map Partner', [Broker Name], [Broker Name]) ,'To be mapped') as BDM,
+     ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) as 'ProductProvider',
+     'ALG' as check,
+     ApplyMap('CashProductProvider',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Exclude Cash],
+     ApplyMap('ProductProviderType',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Type],
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') as DateMonth ,
+     FSP,
+     [FSP Broker Code]
+FROM
+[$(vDataLoad)*AW - Coronation UT.xlsx]
+(ooxml, embedded labels, table is Sheet1);
+
+
+
+
+
+//Coronation Retirement
+Concatenate(AuA_TMP)
+LOAD
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') & '|' &  ApplyMap('Map Partner',  [Intermediary Name],  [Intermediary Name]) & '|' & Subfield(FileBaseName(), '- ', 2) & '|' & ApplyMap('Map Client',[Client Name],[Client Name]) as [KeyAuA], 
+     ApplyMap('Map Client',ApplyMap('Map Partner', [Intermediary Name], [Intermediary Name])&'|'&Upper([Client Name]),Upper([Client Name])) as AwxClient, //***************
+     ApplyMap('Map Xplan ID',ApplyMap('Map Partner', [Intermediary Name], [Intermediary Name])&'|'&Upper([Client Name]),Upper([Client Name])) as EntityID, //***************
+	 if(isnum(ApplyMap('Map Xplan ID',ApplyMap('Map Partner', [Intermediary Name], [Intermediary Name])&'|'&Upper([Client Name]),Upper([Client Name]))), 'Mapped','Unmapped') as [Client Name Map Eval],//***************
+     Upper([Client Name]) as SourceClient,
+     Upper(Trim([Fund Name])) as FundNameSource,
+     ApplyMap('Fund_Mapping_FundGroup',Upper(Trim([Fund Name])),'To be mapped') as FundGroup, 
+     ApplyMap('Fund_Mapping_FeeGenerating',Upper(Trim([Fund Name])),Upper(Trim([Fund Name]))) as [Fee Generating],
+     Upper(Trim(Product)) as Product, 
+     PolicyNo as PolicyNumber, 
+     [Market Value] as AssetValue, 
+     //IDNUMBER as ClientRSAID, 
+     ApplyMap('Map Partner',[Intermediary Name],[Intermediary Name]) as Partner,
+     ApplyMap('BDM_Mapping', ApplyMap('Map Partner',[Intermediary Name],[Intermediary Name]),'To be mapped') as BDM,
+     ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) as 'ProductProvider',
+     'ALG' as check,
+     ApplyMap('CashProductProvider',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Exclude Cash],
+     ApplyMap('ProductProviderType',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Type],
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') as DateMonth,
+     FSP,
+     [FSP Broker Code]
+FROM
+[$(vDataLoad)*AW - Coronation Retirement.xlsx]
+(ooxml, embedded labels, table is Sheet1);
+
+
+
+
+
+
+//Discovery
+Concatenate(AuA_TMP)
+LOAD
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') & '|' &  ApplyMap('Map Partner',Partners,Partners) & '|' & Subfield(FileBaseName(), '- ', 2) & '|' & ApplyMap('Map Client',[First Names] &' '& Surname,[First Names] &' '& Surname)as [KeyAuA],
+     [Policy No] as PolicyNumber, 
+     ApplyMap('Map Client',ApplyMap('Map Partner',Partners,Partners)&'|'&Upper([First Names] &' '& Surname),Upper([First Names] &' '& Surname)) as AwxClient ,//***************
+     ApplyMap('Map Xplan ID',ApplyMap('Map Partner',Partners,Partners)&'|'&Upper([First Names] &' '& Surname),Upper([First Names] &' '& Surname)) as EntityID,//***************
+	 if(isnum( ApplyMap('Map Xplan ID',ApplyMap('Map Partner',Partners,Partners)&'|'&Upper([First Names] &' '& Surname),Upper([First Names] &' '& Surname))), 'Mapped','Unmapped') as [Client Name Map Eval],//***************
+     Upper(([First Names] &' '& Surname)) as SourceClient,
+     Upper(Trim(Product)) as Product, 
+     //[ID Number] as ClientRSAID, 
+     Upper(Trim([Fund Name])) as FundNameSource,
+     ApplyMap('Fund_Mapping_FundGroup',Upper(Trim([Fund Name])),'To be mapped') as FundGroup,
+     ApplyMap('Fund_Mapping_FeeGenerating',Upper(Trim([Fund Name])),Upper(Trim([Fund Name]))) as [Fee Generating], 
+     [Fund Amount] as AssetValue,
+     ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) as 'ProductProvider',
+     'ALG' as check,
+     ApplyMap('CashProductProvider',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Exclude Cash],
+     ApplyMap('ProductProviderType',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Type],
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') as DateMonth,
+     ApplyMap('Map Partner',Partners,Partners) as Partner,
+     ApplyMap('BDM_Mapping',ApplyMap('Map Partner',Partners,Partners) ,'To be mapped') as BDM,
+     FSP,
+    [FSP Broker Code]
+FROM
+[$(vDataLoad)*AW - Discovery.xlsx]
+(ooxml, embedded labels, table is Sheet1);
+
+
+
+
+
+
+//Hollard
+Concatenate(AuA_TMP)
+LOAD
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') & '|' &  ApplyMap('Map Partner',[IFA Name],[IFA Name]) & '|' & ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) & '|' & ApplyMap('Map Client',[Investor Name],[Investor Name]) as [KeyAuA],
+     ApplyMap('Map Client',ApplyMap('Map Partner', [IFA Name],[IFA Name])&'|'&Upper([Investor Name]),Upper([Investor Name])) as AwxClient,//***************
+     ApplyMap('Map Xplan ID',ApplyMap('Map Partner', [IFA Name], [IFA Name])&'|'&Upper([Investor Name]),Upper([Investor Name])) as EntityID, //***************
+	 if(isnum(ApplyMap('Map Xplan ID',ApplyMap('Map Partner', [IFA Name], [IFA Name])&'|'&Upper([Investor Name]),Upper([Investor Name]))), 'Mapped','Unmapped') as [Client Name Map Eval],//***************
+     Upper([Investor Name])as SourceClient,
+     Upper(Trim([Product Name])) as Product, 
+     [Contract Number] as PolicyNumber, 
+     ApplyMap('Map Partner',[IFA Name],[IFA Name]) as Partner, 
+     ApplyMap('BDM_Mapping',ApplyMap('Map Partner',[IFA Name],[IFA Name]) ,'To be mapped') as BDM,
+     Upper(Trim([Instrument Name])) as FundNameSource,
+     ApplyMap('Fund_Mapping_FundGroup',Upper(Trim([Instrument Name])),'To be mapped') as FundGroup,
+     ApplyMap('Fund_Mapping_FeeGenerating',Upper(Trim([Instrument Name])),Upper(Trim([Instrument Name]))) as [Fee Generating], 
+     //[Life Assured ID number] as ClientRSAID , 
+     [Closing Market Value] as AssetValue, 
+     ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) as 'ProductProvider',
+     'ALG' as check,
+     ApplyMap('CashProductProvider',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Exclude Cash],
+     ApplyMap('ProductProviderType',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Type],
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') as DateMonth,
+     FSP,
+     [FSP Broker Code] 
+FROM
+[$(vDataLoad)*AW - Hollard Investments.xlsx]
+(ooxml, embedded labels, table is Sheet1);
+
+
+
+
+
+//Inn8
+Concatenate(AuA_TMP)
+LOAD 
+	 Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') & '|' & ApplyMap('Map Partner',[Adviser Name],[Adviser Name])& '|' & Subfield(FileBaseName(), '- ', 2) & '|' & ApplyMap('Map Client',[Investor Name],[Investor Name]) as [KeyAuA], 
+	 ApplyMap('Map Partner',[Adviser Name],[Adviser Name]) as Partner,
+	 ApplyMap('BDM_Mapping', ApplyMap('Map Partner',[Adviser Name],[Adviser Name]),'To be mapped') as BDM,
+	 ApplyMap('Map Client',ApplyMap('Map Partner', [Adviser Name],[Adviser Name])&'|'&Upper([Investor Name]),Upper([Investor Name])) as AwxClient, 
+	 ApplyMap('Map Xplan ID',ApplyMap('Map Partner', [Adviser Name], [Adviser Name])&'|'&Upper([Investor Name]),Upper([Investor Name])) as EntityID, 
+	 if(isnum(ApplyMap('Map Xplan ID',ApplyMap('Map Partner',[Adviser Name],[Adviser Name])&'|'&Upper([Investor Name]),Upper([Investor Name]))), 'Mapped','Unmapped') as [Client Name Map Eval],
+	 Upper([Investor Name]) as SourceClient,
+	 [Investor Composer ID] as PolicyNumber, 
+ 	 Upper(Trim([Account Name])) as Product,
+	 Upper(Trim([Asset Name])) as FundNameSource,
+	 ApplyMap('Fund_Mapping_FundGroup',[Investor Composer ID] & ' || ' & Upper(Trim([Asset Name])),'To be mapped') as FundGroup, 
+	 ApplyMap('Fund_Mapping_FeeGenerating',[Investor Composer ID] & ' || ' & Upper(Trim([Asset Name])),[Investor Composer ID] & ' || ' & Upper(Trim([Asset Name]))) as [Fee Generating],
+	 [AUM ZAR] as AssetValue,
+	 ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) as 'ProductProvider',
+     'ALG' as check,
+     ApplyMap('CashProductProvider',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Exclude Cash],
+     ApplyMap('ProductProviderType',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Type],  
+	 Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') as DateMonth,
+	 FSP,
+	 [FSP Broker Code]
+FROM
+[$(vDataLoad)*AW - Inn8.xlsx]
+(ooxml, embedded labels, table is Sheet1);
+
+
+
+// INN8 Local
+Concatenate(AuA_TMP)
+LOAD 
+	 Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') & '|' & ApplyMap('Map Partner',[Advisor Full Name],[Advisor Full Name])& '|' & Subfield(FileBaseName(), '- ', 2) & '|' & ApplyMap('Map Client',[Client Full Name],[Client Full Name]) as [KeyAuA],
+	 ApplyMap('Map Partner',[Advisor Full Name],[Advisor Full Name]) as Partner,
+	 ApplyMap('BDM_Mapping', ApplyMap('Map Partner',[Advisor Full Name],[Advisor Full Name]),'To be mapped') as BDM,
+	 ApplyMap('Map Client',ApplyMap('Map Partner',[Advisor Full Name],[Advisor Full Name])&'|'&Upper([Client Full Name]),Upper([Client Full Name])) as AwxClient,
+	 ApplyMap('Map Xplan ID',ApplyMap('Map Partner',[Advisor Full Name],[Advisor Full Name])&'|'&Upper([Client Full Name]),Upper([Client Full Name])) as EntityID,
+	 if(isnum(ApplyMap('Map Xplan ID',ApplyMap('Map Partner',[Advisor Full Name],[Advisor Full Name])&'|'&Upper([Client Full Name]),Upper([Client Full Name]))), 'Mapped','Unmapped') as [Client Name Map Eval],
+	 Upper([Client Full Name]) as SourceClient,
+	 [Account Number] as PolicyNumber,
+	 Upper(Trim(Product)) as Product,
+	 Upper(Trim([Fund Name])) as FundNameSource,
+	 ApplyMap('Fund_Mapping_FundGroup',Upper(Trim([Account Number])) & ' || ' & Upper(Trim([Fund Name])),'To be mapped') as FundGroup,
+	 ApplyMap('Fund_Mapping_FeeGenerating',Upper(Trim([Account Number])) & ' || ' & Upper(Trim([Fund Name])),[Account Number] & ' || ' & Upper(Trim([Fund Name]))) as [Fee Generating],
+	 [Current Market Value] as AssetValue,
+	 ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) as 'ProductProvider',
+     'ALG' as check,
+     ApplyMap('CashProductProvider',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Exclude Cash],
+     ApplyMap('ProductProviderType',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Type],
+	 Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') as DateMonth,
+	 FSP,
+	 [FSP Broker Code]
+FROM
+[$(vDataLoad)*AW - Inn8 Local.xlsx]
+(ooxml, embedded labels, table is Sheet1);
+
+
+
+
+
+//Ninety One LISP (Old Investec)
+Concatenate(AuA_TMP)
+LOAD  
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') & '|' & applymap('Map Partner',Broker_Name,Broker_Name) & '|' & Subfield(FileBaseName(), '- ', 2) & '|' & ApplyMap('Map Client',ClientName,ClientName) as [KeyAuA],
+     ApplyMap('Map Partner',Broker_Name,Broker_Name) as Partner,
+     ApplyMap('BDM_Mapping',ApplyMap('Map Partner',Broker_Name,Broker_Name) ,'To be mapped') as BDM,  
+     Upper(Trim(Product)) as Product, 
+     ApplyMap('Map Client',ApplyMap('Map Partner', Broker_Name,Broker_Name)&'|'&Upper(ClientName),Upper(ClientName)) as AwxClient, 
+     ApplyMap('Map Xplan ID',ApplyMap('Map Partner',Broker_Name,Broker_Name)&'|'&Upper(ClientName),Upper(ClientName)) as EntityID, 
+	 if(isnum(ApplyMap('Map Xplan ID',ApplyMap('Map Partner',Broker_Name,Broker_Name)&'|'&Upper(ClientName),Upper(ClientName))), 'Mapped','Unmapped') as [Client Name Map Eval],
+     Upper(ClientName) as SourceClient,
+     [Contract_Number] as PolicyNumber,  
+     Upper(Trim(Instruments)) as FundNameSource,
+     ApplyMap('Fund_Mapping_FundGroup',Upper(Trim(Instruments)),'To be mapped') as FundGroup,
+     ApplyMap('Fund_Mapping_FeeGenerating',Upper(Trim(Instruments)),Upper(Trim(Instruments))) as [Fee Generating], 
+     ZAR_Value as AssetValue, 
+     ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) as 'ProductProvider',
+     'ALG' as check,
+     ApplyMap('CashProductProvider',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Exclude Cash],
+     ApplyMap('ProductProviderType',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Type],
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') as DateMonth,
+     FSP,
+	[FSP Broker Code] 
+FROM
+[$(vDataLoad)*AW - Ninety One.xlsx]
+(ooxml, embedded labels, table is Sheet1);
+
+
+
+
+
+//Investec CCM
+Concatenate(AuA_TMP)
+LOAD
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') & '|' &  ApplyMap('Map Partner',[Partner_Name],[Partner_Name]) & '|' & Subfield(FileBaseName(), '- ', 2) & '|' & ApplyMap('Map Client',[Client Name],[Client Name]) as [KeyAuA],
+     [Account Number] as PolicyNumber, 
+     Upper(Trim('PRODUCT INFORMATION IS NOT AVAILABLE')) as Product,
+     ApplyMap('Map Client',ApplyMap('Map Partner', [Partner_Name],[Partner_Name])&'|'&Upper([Client Name]),Upper([Client Name])) as  AwxClient,  
+     ApplyMap('Map Xplan ID',ApplyMap('Map Partner',[Partner_Name],[Partner_Name])&'|'&Upper([Client Name]),Upper([Client Name])) as EntityID,  
+	 if(isnum(ApplyMap('Map Xplan ID',ApplyMap('Map Partner',[Partner_Name],[Partner_Name])&'|'&Upper([Client Name]),Upper([Client Name]))), 'Mapped','Unmapped') as [Client Name Map Eval],  
+     Upper([Client Name]) as SourceClient, 
+     ApplyMap('Map Partner',[Partner_Name],[Partner_Name]) as Partner, 
+     ApplyMap('BDM_Mapping',ApplyMap('Map Partner',[Partner_Name],[Partner_Name]) ,'To be mapped') as BDM,
+     [Month End Balance] as AssetValue,
+     Upper(Trim([Account Type Description])) as FundNameSource,
+     ApplyMap('Fund_Mapping_FundGroup',Upper(Trim([Account Type Description])),'To be mapped') as FundGroup,
+     ApplyMap('Fund_Mapping_FeeGenerating',Upper(Trim([Account Type Description])),Upper(Trim([Account Type Description]))) as [Fee Generating],
+     ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) as 'ProductProvider',
+     'ALG' as check,
+     ApplyMap('CashProductProvider',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Exclude Cash],
+     ApplyMap('ProductProviderType',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Type],
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') as DateMonth,
+     FSP,
+     [FSP Broker Code]
+FROM
+[$(vDataLoad)*AW - Investec CCM.xlsx]
+(ooxml, embedded labels, table is Sheet1);
+
+
+
+
+
+//Ninety One UT (old Investec)
+Concatenate(AuA_TMP)
+LOAD 
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') & '|' & applymap('Map Partner',BROKERNAME,BROKERNAME) & '|' & ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) & '|' &  ApplyMap('Map Client',CLIENTNAME,CLIENTNAME) as [KeyAuA],
+     CLIENTACCNO as PolicyNumber,
+     Upper(Trim('PRODUCT INFORMATION IS NOT AVAILABLE')) as Product, 
+     ApplyMap('Map Client',ApplyMap('Map Partner',BROKERNAME,BROKERNAME)&'|'&Upper(CLIENTNAME),Upper(CLIENTNAME)) as AwxClient,   
+     ApplyMap('Map Xplan ID',ApplyMap('Map Partner',BROKERNAME,BROKERNAME)&'|'&Upper(CLIENTNAME),Upper(CLIENTNAME)) as EntityID,  
+	 if(isnum(ApplyMap('Map Xplan ID',ApplyMap('Map Partner',BROKERNAME,BROKERNAME)&'|'&Upper(CLIENTNAME),Upper(CLIENTNAME))), 'Mapped','Unmapped') as [Client Name Map Eval],  
+     Upper(CLIENTNAME) as SourceClient,
+     Upper(Trim([FUND NAME])) as FundNameSource,
+     ApplyMap('Fund_Mapping_FundGroup',Upper(Trim([FUND NAME])),'To be mapped') as FundGroup, 
+     ApplyMap('Fund_Mapping_FeeGenerating',Upper(Trim([FUND NAME])),Upper(Trim([FUND NAME]))) as [Fee Generating], 
+     ApplyMap('Map Partner',BROKERNAME,BROKERNAME) as Partner, 
+     ApplyMap('BDM_Mapping', ApplyMap('Map Partner',BROKERNAME,BROKERNAME),'To be mapped') as BDM, 
+     [CLOSING MARKET VALUE] as AssetValue,
+     ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) as 'ProductProvider',
+     'ALG' as check,
+     ApplyMap('CashProductProvider',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Exclude Cash],
+     ApplyMap('ProductProviderType',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Type],
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') as DateMonth,
+     FSP,
+     [FSP Broker Code]
+FROM
+[$(vDataLoad)*AW - Ninety One UT.xlsx]
+(ooxml, embedded labels, table is Sheet1);
+
+
+
+
+
+//iTransact
+Concatenate(AuA_TMP)
+LOAD 
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') & '|' & applymap('Map Partner',Broker,Broker) & '|' & Subfield(FileBaseName(), '- ', 2) & '|' & ApplyMap('Map Client',[Investor(s) Name],[Investor(s) Name]) as [KeyAuA],
+     [Investor(s) Reference] as PolicyNumber,
+     Upper(Trim('PRODUCT INFORMATION IS NOT AVAILABLE')) as Product,
+     ApplyMap('Map Client',ApplyMap('Map Partner',Broker,Broker)&'|'&Upper([Investor(s) Name]),Upper([Investor(s) Name])) as AwxClient,  
+     ApplyMap('Map Xplan ID',ApplyMap('Map Partner',Broker,Broker)&'|'&Upper([Investor(s) Name]),Upper([Investor(s) Name])) as EntityID, 
+	 if(isnum(ApplyMap('Map Xplan ID',ApplyMap('Map Partner',Broker,Broker)&'|'&Upper([Investor(s) Name]),Upper([Investor(s) Name]))), 'Mapped','Unmapped') as [Client Name Map Eval], 
+     Upper([Investor(s) Name]) as SourceClient,
+     [Total Value (Excl. cash)] as AssetValue, 
+     ApplyMap('Map Partner',Broker,Broker) as Partner, 
+     ApplyMap('BDM_Mapping',ApplyMap('Map Partner',Broker,Broker) ,'To be mapped') as BDM,
+     Upper(Trim(if([Instrument name] = '' or len(trim([Instrument name]))=0 or [Instrument name] = '-','No fund information available',[Instrument name]))) as FundNameSource,
+     ApplyMap('Fund_Mapping_FundGroup',Upper(Trim(if([Instrument name] = '' or len(trim([Instrument name]))=0 or [Instrument name] = '-','No fund information available',[Instrument name]))),'To be mapped') as FundGroup,
+     ApplyMap('Fund_Mapping_FeeGenerating',Upper(Trim(if([Instrument name] = '' or len(trim([Instrument name]))=0 or [Instrument name] = '-','No fund information available',[Instrument name]))),Upper(Trim(if([Instrument name] = '' or len(trim([Instrument name]))=0 or [Instrument name] = '-','No fund information available',[Instrument name])))) as [Fee Generating],
+     ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) as 'ProductProvider',
+     'ALG' as check,
+     ApplyMap('CashProductProvider',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Exclude Cash],
+     ApplyMap('ProductProviderType',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Type],
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') as DateMonth,
+     FSP,
+     [FSP Broker Code] 
+FROM
+[$(vDataLoad)*AW - iTransact.xlsx]
+(ooxml, embedded labels, table is Sheet1);
+
+
+
+
+
+//Liberty
+Concatenate(AuA_TMP)
+LOAD 
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') & '|' &  ApplyMap('Map Partner',[Consultant Name],[Consultant Name])& '|' & Subfield(FileBaseName(), '- ', 2) & '|' & ApplyMap('Map Client', [LibName],[LibName]) as [KeyAuA],
+     [Policy Number] as PolicyNumber, 
+     ApplyMap('Map Partner',[Consultant Name],[Consultant Name]) as Partner, 
+     ApplyMap('BDM_Mapping',ApplyMap('Map Partner',[Consultant Name],[Consultant Name]) ,'To be mapped') as BDM, 
+     ApplyMap('Map Client',ApplyMap('Map Partner',[Consultant Name],[Consultant Name])&'|'&Upper([LibName]),Upper([LibName])) as AwxClient,
+     ApplyMap('Map Xplan ID',ApplyMap('Map Partner',[Consultant Name],[Consultant Name])&'|'&Upper([LibName]),Upper([LibName])) as EntityID, 
+	 if(isnum(ApplyMap('Map Xplan ID',ApplyMap('Map Partner',[Consultant Name],[Consultant Name])&'|'&Upper([LibName]),Upper([LibName]))), 'Mapped','Unmapped') as [Client Name Map Eval], 
+     if(Upper(LibName)= 'NOT NOT APPLICABLE' ,Upper([Policy Number]&'|'&'Liberty'),Upper(LibName))  as SourceClient,
+     //[PLA Natl ID] as ClientRSAID,  
+     Upper(Trim([Product Name])) as Product,
+     Upper(Trim(if([Fund Name] = '-','No fund information available',[Fund Name]))) as FundNameSource,
+     ApplyMap('Fund_Mapping_FundGroup',Upper(Trim(if([Fund Name] = '-','No fund information available',[Fund Name]))),'To be mapped') as FundGroup,
+     ApplyMap('Fund_Mapping_FeeGenerating',Upper(Trim(if([Fund Name] = '-','No fund information available',[Fund Name]))),Upper(Trim(if([Fund Name] = '-','No fund information available',[Fund Name])))) as [Fee Generating],  
+     [Amount] as AssetValue,
+     ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) as 'ProductProvider',
+     'ALG' as check,
+     ApplyMap('CashProductProvider',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Exclude Cash],
+     ApplyMap('ProductProviderType',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Type],
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') as DateMonth,
+     FSP,
+     [FSP Broker Code]
+FROM
+[$(vDataLoad)*AW - Liberty.xlsx]
+(ooxml, embedded labels, table is Sheet1);
+
+
+
+
+
+//Marriott
+Concatenate(AuA_TMP)
+LOAD 
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') & '|' & applymap('Map Partner',BrokerName, BrokerName) & '|' & Subfield(FileBaseName(), '- ', 2) & '|' & ApplyMap('Map Client',MarriotNameCname,MarriotNameCname) as [KeyAuA],
+     ApplyMap('Map Partner',BrokerName,BrokerName) as Partner, 
+     ApplyMap('BDM_Mapping', ApplyMap('Map Partner',BrokerName,BrokerName),'To be mapped') as BDM,
+     Account as PolicyNumber,  
+     ApplyMap('Map Client',ApplyMap('Map Partner',BrokerName,BrokerName)&'|'&Upper(MarriotNameCname),Upper(MarriotNameCname)) as AwxClient,
+     ApplyMap('Map Xplan ID',ApplyMap('Map Partner',BrokerName,BrokerName)&'|'&Upper(MarriotNameCname),Upper(MarriotNameCname)) as EntityID, 
+	 if(isnum(ApplyMap('Map Xplan ID',ApplyMap('Map Partner',BrokerName,BrokerName)&'|'&Upper(MarriotNameCname),Upper(MarriotNameCname))), 'Mapped','Unmapped') as [Client Name Map Eval],
+     Upper(MarriotNameCname) as SourceClient,
+     //IDNumber as ClientRSAID, 
+     Upper(Trim('No fund information available')) as FundNameSource,
+     ApplyMap('Fund_Mapping_FundGroup',Upper(Trim('No fund information available')),'To be mapped') as FundGroup,
+     ApplyMap('Fund_Mapping_FeeGenerating',Upper(Trim('No fund information available')),Upper(Trim('No fund information available'))) as [Fee Generating], 
+     Upper(Trim(Product)) as Product,
+     ZAR as AssetValue, 
+     ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) as 'ProductProvider',
+     'ALG' as check,
+     ApplyMap('CashProductProvider',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Exclude Cash],
+     ApplyMap('ProductProviderType',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Type],
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') as DateMonth,
+     FSP,
+     [FSP Broker Code]
+FROM
+[$(vDataLoad)*AW - Marriott.xlsx]
+(ooxml, embedded labels, table is Sheet1);
+
+
+
+
+
+//Momentum
+Concatenate(AuA_TMP)
+LOAD 
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') & '|' & applymap('Map Partner',[Broker Name], [Broker Name]) & '|' &  ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))  & '|' &    ApplyMap('Map Client',[Client],[Client]) as [KeyAuA],
+     ApplyMap('Map Partner',[Broker Name],[Broker Name]) as Partner, 
+     ApplyMap('BDM_Mapping',ApplyMap('Map Partner',[Broker Name],[Broker Name]) ,'To be mapped') as BDM, 
+     [Investment Number] as PolicyNumber,
+     ApplyMap('Map Client',ApplyMap('Map Partner',[Broker Name],[Broker Name])&'|'&Upper([Client]),Upper([Client])) as AwxClient,
+     ApplyMap('Map Xplan ID',ApplyMap('Map Partner',[Broker Name],[Broker Name])&'|'&Upper([Client]),Upper([Client])) as EntityID, 
+	 if(isnum(ApplyMap('Map Xplan ID',ApplyMap('Map Partner',[Broker Name],[Broker Name])&'|'&Upper([Client]),Upper([Client]))), 'Mapped','Unmapped') as [Client Name Map Eval],
+     Upper(Client) as SourceClient,
+     //[Client Number] as ClientRSAID, 
+     Upper(Trim(Product)) as Product, 
+     Upper(Trim(Fund)) as FundNameSource,
+     ApplyMap('Fund_Mapping_FundGroup',[Investment Number] & ' || ' & Upper(Trim(Fund)),'To be mapped') as FundGroup, 
+     ApplyMap('Fund_Mapping_FeeGenerating',[Investment Number] & ' || ' & Upper(Trim(Fund)),[Investment Number] & ' || ' & Upper(Trim(Fund))) as [Fee Generating],
+     Amount as AssetValue,
+     ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) as 'ProductProvider',
+     'ALG' as check,
+     ApplyMap('CashProductProvider',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Exclude Cash],
+     ApplyMap('ProductProviderType',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Type],
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') as DateMonth,
+     FSP, 
+     [FSP Broker Code]
+FROM
+[$(vDataLoad)*AW - Momentum.xlsx]
+(ooxml, embedded labels, table is Sheet1);
+
+
+
+
+
+//Momentum Investo
+Concatenate(AuA_TMP)
+LOAD
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') & '|' &  ApplyMap('Map Partner',[Broker Name],[Broker Name]) & '|' & ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) & '|' & ApplyMap('Map Client',[Client First Name]&' '& [Client Surname],[Client First Name]&' '& [Client Surname]) as [KeyAuA],
+     ApplyMap('Map Partner',[Broker Name],[Broker Name]) as Partner,
+     ApplyMap('BDM_Mapping',  ApplyMap('Map Partner',[Broker Name],[Broker Name]),'To be mapped') as BDM, 
+     [Client Number] as PolicyNumber,   
+     ApplyMap('Map Client',ApplyMap('Map Partner',[Broker Name],[Broker Name])&'|'&Upper([Client First Name]&' '& [Client Surname]),Upper([Client First Name]&' '& [Client Surname])) as AwxClient,
+     ApplyMap('Map Xplan ID',ApplyMap('Map Partner',[Broker Name],[Broker Name])&'|'&Upper([Client First Name]&' '& [Client Surname]),Upper([Client First Name]&' '& [Client Surname])) as EntityID, 
+	 if(isnum(ApplyMap('Map Xplan ID',ApplyMap('Map Partner',[Broker Name],[Broker Name])&'|'&Upper([Client First Name]&' '& [Client Surname]),Upper([Client First Name]&' '& [Client Surname]))), 'Mapped','Unmapped') as [Client Name Map Eval],
+     Upper([Client First Name]&' '& [Client Surname]) as SourceClient,
+     //[ID Number] as ClientRSAID, 
+     Upper(Trim(Product)) as Product, 
+     Upper(Trim(Fund)) as FundNameSource,
+     ApplyMap('Fund_Mapping_FundGroup',Upper(Trim(Fund)),'To be mapped') as FundGroup, 
+     ApplyMap('Fund_Mapping_FeeGenerating',Upper(Trim(Fund)),Upper(Trim(Fund))) as [Fee Generating],
+     Amount as AssetValue, 
+     ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) as 'ProductProvider',
+     'ALG' as check,
+     ApplyMap('CashProductProvider',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Exclude Cash],
+     ApplyMap('ProductProviderType',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Type],
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') as DateMonth,
+     FSP,
+     [FSP Broker Code]
+FROM
+[$(vDataLoad)*AW - Momentum Investo.xlsx]
+(ooxml, embedded labels, table is Sheet1);
+
+
+
+
+
+//Momentum PDS
+Concatenate(AuA_TMP)
+LOAD
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') & '|' &  ApplyMap('Map Partner',[Broker Name],[Broker Name]) & '|' & ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) & '|' & ApplyMap('Map Client',[Client First Name]&' '& [Client Surname],[Client First Name]&' '& [Client Surname]) as [KeyAuA],
+     ApplyMap('Map Partner',[Broker Name],[Broker Name]) as Partner, 
+     ApplyMap('BDM_Mapping',ApplyMap('Map Partner',[Broker Name],[Broker Name]) ,'To be mapped') as BDM,
+     [Client Number] as PolicyNumber,   
+     ApplyMap('Map Client',ApplyMap('Map Partner',[Broker Name],[Broker Name])&'|'&Upper([Client First Name]&' '& [Client Surname]),Upper([Client First Name]&' '& [Client Surname])) as AwxClient,
+     ApplyMap('Map Xplan ID',ApplyMap('Map Partner',[Broker Name],[Broker Name])&'|'&Upper([Client First Name]&' '& [Client Surname]),Upper([Client First Name]&' '& [Client Surname])) as EntityID, 
+	 if(isnum(ApplyMap('Map Xplan ID',ApplyMap('Map Partner',[Broker Name],[Broker Name])&'|'&Upper([Client First Name]&' '& [Client Surname]),Upper([Client First Name]&' '& [Client Surname]))), 'Mapped','Unmapped') as [Client Name Map Eval],
+     Upper([Client First Name]&' '& [Client Surname]) as SourceClient,
+     //[ID Number] as ClientRSAID, 
+     Upper(Trim(Product)) as Product, 
+     Upper(Trim(Fund)) as FundNameSource,
+     ApplyMap('Fund_Mapping_FundGroup',Upper(Trim(Fund)),'To be mapped') as FundGroup, 
+     ApplyMap('Fund_Mapping_FeeGenerating',Upper(Trim(Fund)),Upper(Trim(Fund))) as [Fee Generating],
+     Amount as AssetValue, 
+     ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) as 'ProductProvider',
+     'ALG' as check,
+     ApplyMap('CashProductProvider',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Exclude Cash],
+     ApplyMap('ProductProviderType',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Type],
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') as DateMonth,
+     FSP, 
+     [FSP Broker Code]
+FROM
+[$(vDataLoad)*AW - Momentum PDS.xlsx]
+(ooxml, embedded labels, table is Sheet1);
+
+
+
+
+
+//Momentum RMB
+Concatenate(AuA_TMP)
+LOAD  
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') & '|' & applymap('Map Partner',Broker, Broker) & '|' &  ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) & '|' & ApplyMap('Map Client',Contract_Owner1_Initials & ' ' & Contract_Owner1_Name,Contract_Owner1_Initials & ' ' & Contract_Owner1_Name)as [KeyAuA],
+     ApplyMap('Map Partner',Broker,Broker) as Partner, 
+     ApplyMap('BDM_Mapping', ApplyMap('Map Partner',Broker,Broker),'To be mapped') as BDM,
+     ApplyMap('Map Client',ApplyMap('Map Partner',Broker,Broker)&'|'&Upper(Contract_Owner1_Initials & ' ' & Contract_Owner1_Name),Upper(Contract_Owner1_Initials & ' ' & Contract_Owner1_Name)) as AwxClient,
+     ApplyMap('Map Xplan ID',ApplyMap('Map Partner',Broker,Broker)&'|'&Upper(Contract_Owner1_Initials & ' ' & Contract_Owner1_Name),Upper(Contract_Owner1_Initials & ' ' & Contract_Owner1_Name)) as EntityID, 
+     if(isnum(ApplyMap('Map Xplan ID',ApplyMap('Map Partner',Broker,Broker)&'|'&Upper(Contract_Owner1_Initials & ' ' & Contract_Owner1_Name),Upper(Contract_Owner1_Initials & ' ' & Contract_Owner1_Name))), 'Mapped','Unmapped') as [Client Name Map Eval],
+     Upper(Contract_Owner1_Initials & ' ' & Contract_Owner1_Name) as SourceClient,
+     //Contract_Owner1_ID as ClientRSAID,  
+     Contract_Number as PolicyNumber, 
+     Upper(Trim(Product_Name)) as Product,
+     Upper(Trim(Fund_Name)) as FundNameSource,
+     ApplyMap('Fund_Mapping_FundGroup',Upper(Trim(Fund_Name)),'To be mapped') as FundGroup, 
+     ApplyMap('Fund_Mapping_FeeGenerating',Upper(Trim(Fund_Name)),Upper(Trim(Fund_Name))) as [Fee Generating],
+     Market_Value as AssetValue,
+     ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) as 'ProductProvider',
+     'ALG' as check,
+     ApplyMap('CashProductProvider',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Exclude Cash],
+     ApplyMap('ProductProviderType',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Type],
+     
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') as DateMonth,
+     FSP,
+     [FSP Broker Code] 
+FROM
+[$(vDataLoad)*AW - Momentum RMB.xlsx]
+(ooxml, embedded labels, table is Sheet1);
+
+
+
+
+
+//MWI IIO
+Concatenate(AuA_TMP)
+LOAD
+ 	 Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') & '|' & applymap('Map Partner',[Broker firstname1] &' '& [Broker surname1],[Broker firstname1] &' '& [Broker surname1]) & '|' & ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) & '|' & ApplyMap('Map Client',Title1 &' '& [First names1] &' '& Surname1,Title1 &' '& [First names1] &' '& Surname1) as [KeyAuA],
+     [Contract number] as PolicyNumber,  
+     ZAR as AssetValue, 
+     Upper(Trim([Product name])) as Product, 
+     Upper(Trim([Fund name])) as FundNameSource,
+     ApplyMap('Fund_Mapping_FundGroup',if(isnull([Wrap fund]),Upper(Trim([Fund name])),Upper(Trim([Wrap fund]))),'To be mapped') as FundGroup,
+     ApplyMap('Fund_Mapping_FeeGenerating',if(isnull([Wrap fund]),Upper(Trim([Fund name])),if(isnull([Wrap fund]),Upper(Trim([Fund name])),Upper(Trim([Wrap fund])))),if(isnull([Wrap fund]),Upper(Trim([Fund name])),Upper(Trim([Wrap fund])))) as [Fee Generating],
+     //[ID number1] as ClientRSAID, 
+     Upper(Title1 &' '& [First names1]) as SourceClient,
+     ApplyMap('Map Xplan ID',ApplyMap('Map Partner',[Broker firstname1] &' '& [Broker surname1],[Broker firstname1] &' '& [Broker surname1])&'|'&Upper(Title1 &' '& [First names1] &' '& Surname1),Upper(Title1 &' '& [First names1] &' '& Surname1)) as EntityID,
+	 if(isnum(ApplyMap('Map Xplan ID',ApplyMap('Map Partner',[Broker firstname1] &' '& [Broker surname1],[Broker firstname1] &' '& [Broker surname1])&'|'&Upper(Title1 &' '& [First names1] &' '& Surname1),Upper(Title1 &' '& [First names1] &' '& Surname1))), 'Mapped','Unmapped') as [Client Name Map Eval],
+     ApplyMap('Map Client',ApplyMap('Map Partner',[Broker firstname1] &' '& [Broker surname1],[Broker firstname1] &' '& [Broker surname1])&'|'&Upper(Title1 &' '& [First names1] &' '& Surname1),Upper(Title1 &' '& [First names1] &' '& Surname1)) as AwxClient,
+     ApplyMap('Map Partner',[Broker firstname1] &' '& [Broker surname1],[Broker firstname1] &' '& [Broker surname1]) as Partner,
+     ApplyMap('BDM_Mapping',ApplyMap('Map Partner',[Broker firstname1] &' '& [Broker surname1],[Broker firstname1] &' '& [Broker surname1]) ,'To be mapped') as BDM,
+     ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) as 'ProductProvider',
+     'ALG' as check,
+     ApplyMap('CashProductProvider',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Exclude Cash],
+     ApplyMap('ProductProviderType',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Type],
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') as DateMonth,
+     FSP,
+     [FSP Broker Code]
+FROM
+[$(vDataLoad)*AW - Momentum Wealth International.xlsx]
+(ooxml, embedded labels, table is Sheet1);
+
+
+
+
+
+//Momentum Wealth EB
+Concatenate(AuA_TMP)
+LOAD 
+	 Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') & '|' & applymap('Map Partner',[Broker Name & Surname], [Broker Name & Surname]) & '|' &  Subfield(FileBaseName(), '- ', 2) & '|' & ApplyMap('Map Client',[Scheme Name],[Scheme Name])as [KeyAuA],
+	 ApplyMap('Map Partner',[Broker Name & Surname],[Broker Name & Surname]) as Partner,
+	 ApplyMap('BDM_Mapping',ApplyMap('Map Partner',[Broker Name & Surname],[Broker Name & Surname]),'To be mapped') as BDM,
+	 'No policy information available' as PolicyNumber,
+	 ApplyMap('Map Client',ApplyMap('Map Partner',[Broker Name & Surname],[Broker Name & Surname])&'|'&Upper([Scheme Name]),Upper([Scheme Name])) as AwxClient, 
+	 ApplyMap('Map Xplan ID',ApplyMap('Map Partner',[Broker Name & Surname],[Broker Name & Surname])&'|'&Upper([Scheme Name]),Upper([Scheme Name])) as EntityID,
+	 if(isnum(ApplyMap('Map Xplan ID',ApplyMap('Map Partner',[Broker Name & Surname],[Broker Name & Surname])&'|'&Upper([Scheme Name]),Upper([Scheme Name]))), 'Mapped','Unmapped') as [Client Name Map Eval],
+	 Upper([Broker Name & Surname]) as SourceClient,
+	 Upper(Trim('No fund information available')) as FundNameSource,
+     Upper(Trim('PRODUCT INFORMATION IS NOT AVAILABLE')) as Product,
+     ApplyMap('Fund_Mapping_FundGroup',Upper(Trim('No fund information available')),'To be mapped') as FundGroup, 
+     ApplyMap('Fund_Mapping_FeeGenerating',Upper(Trim('No fund information available')),Upper(Trim('No fund information available'))) as [Fee Generating],
+	 Assets as AssetValue, 
+	 ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) as 'ProductProvider',
+     'ALG' as check,
+     ApplyMap('CashProductProvider',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Exclude Cash],
+     ApplyMap('ProductProviderType',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Type],
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') as DateMonth,
+     FSP,
+     [FSP Broker Code]
+FROM
+[$(vDataLoad)*AW - Momentum Wealth EB.xlsx]
+(ooxml, embedded labels, table is Sheet1);
+
+
+//Sanlam EB
+Concatenate(AuA_TMP)
+LOAD 
+	 Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') & '|' & applymap('Map Partner',[Broker Name & Surname], [Broker Name & Surname]) & '|' &  Subfield(FileBaseName(), '- ', 2) & '|' & ApplyMap('Map Client',[Scheme Name],[Scheme Name])as [KeyAuA],
+	 ApplyMap('Map Partner',[Broker Name & Surname],[Broker Name & Surname]) as Partner,
+	 ApplyMap('BDM_Mapping',ApplyMap('Map Partner',[Broker Name & Surname],[Broker Name & Surname]),'To be mapped') as BDM,
+	 'No policy information available' as PolicyNumber,
+	 ApplyMap('Map Client',ApplyMap('Map Partner',[Broker Name & Surname],[Broker Name & Surname])&'|'&Upper([Scheme Name]),Upper([Scheme Name])) as AwxClient, 
+	 ApplyMap('Map Xplan ID',ApplyMap('Map Partner',[Broker Name & Surname],[Broker Name & Surname])&'|'&Upper([Scheme Name]),Upper([Scheme Name])) as EntityID,
+	 if(isnum(ApplyMap('Map Xplan ID',ApplyMap('Map Partner',[Broker Name & Surname],[Broker Name & Surname])&'|'&Upper([Scheme Name]),Upper([Scheme Name]))), 'Mapped','Unmapped') as [Client Name Map Eval],
+	 Upper([Broker Name & Surname]) as SourceClient,
+	 Upper(Trim('No fund information available')) as FundNameSource,
+     'PRODUCT INFORMATION IS NOT AVAILABLE' as Product,
+     ApplyMap('Fund_Mapping_FundGroup',Upper(Trim('No fund information available')),'To be mapped') as FundGroup, 
+     ApplyMap('Fund_Mapping_FeeGenerating',Upper(Trim('No fund information available')),Upper(Trim('No fund information available'))) as [Fee Generating],
+	 Assets as AssetValue, 
+	 Subfield(FileBaseName(), '- ', 2) as 'ProductProvider',
+     'ALG' as check,
+     ApplyMap('CashProductProvider',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Exclude Cash],
+     ApplyMap('ProductProviderType',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Type],
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') as DateMonth,
+     FSP,
+     [FSP Broker Code]
+FROM
+[$(vDataLoad)*AW - Sanlam EB.xlsx]
+(ooxml, embedded labels, table is Sheet1);
+
+
+
+
+
+//Nedgroup
+Concatenate(AuA_TMP)
+LOAD 
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') & '|' & applymap('Map Partner',Name, Name) & '|' &  ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) & '|' &  ApplyMap('Map Client',[Investor name],[Investor name]) as [KeyAuA],
+     ApplyMap('Map Partner',Name,Name) as Partner,  
+     ApplyMap('BDM_Mapping',  ApplyMap('Map Partner',Name,Name),'To be mapped') as BDM,
+     [Investor account number] as PolicyNumber, 
+     ApplyMap('Map Client',ApplyMap('Map Partner',Name,Name)&'|'&Upper([Investor name]),Upper([Investor name])) as AwxClient, 
+     ApplyMap('Map Xplan ID',ApplyMap('Map Partner',Name,Name)&'|'&Upper([Investor name]),Upper([Investor name])) as EntityID,
+     if(isnum(ApplyMap('Map Xplan ID',ApplyMap('Map Partner',Name,Name)&'|'&Upper([Investor name]),Upper([Investor name]))), 'Mapped','Unmapped') as [Client Name Map Eval],
+     Upper([Investor name]) as SourceClient,
+     Upper(Trim([Investment vehicle])) as Product, 
+     Upper(Trim([Unit trust portfolio])) as FundNameSource,
+     ApplyMap('Fund_Mapping_FundGroup',Upper(Trim([Unit trust portfolio])),'To be mapped') as FundGroup, 
+     ApplyMap('Fund_Mapping_FeeGenerating',Upper(Trim([Unit trust portfolio])),Upper(Trim([Unit trust portfolio]))) as [Fee Generating],
+     [Amount] as AssetValue, 
+     ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) as 'ProductProvider',
+     'ALG' as check,
+     ApplyMap('CashProductProvider',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Exclude Cash],
+     ApplyMap('ProductProviderType',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Type],
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') as DateMonth,
+     FSP,
+     [FSP Broker Code]
+FROM
+[$(vDataLoad)*AW - Nedgroup.xlsx]
+(ooxml, embedded labels, table is Sheet1);
+
+
+
+
+
+//Nedgroup International
+Concatenate(AuA_TMP)
+LOAD 
+	 Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') & '|' & applymap('Map Partner',SellingAgent, SellingAgent) & '|' &  ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) & '|' &  ApplyMap('Map Client',Surname,Surname) as [KeyAuA],
+	 Upper(Trim(Instrument)) as FundNameSource,
+	 ApplyMap('Fund_Mapping_FundGroup',Upper(Trim(Instrument)),'To be mapped') as FundGroup, 
+	 ApplyMap('Fund_Mapping_FeeGenerating',Upper(Trim(Instrument)),Upper(Trim(Instrument))) as [Fee Generating],
+     ClientRef as PolicyNumber, 
+     Upper(Trim('PRODUCT INFORMATION IS NOT AVAILABLE')) as Product,
+     Upper(Surname) as SourceClient,
+     ApplyMap('Map Xplan ID',ApplyMap('Map Partner',SellingAgent,SellingAgent)&'|'&Upper(Surname),Upper(Surname)) as EntityID,
+	 if(isnum(ApplyMap('Map Xplan ID',ApplyMap('Map Partner',SellingAgent,SellingAgent)&'|'&Upper(Surname),Upper(Surname))), 'Mapped','Unmapped') as [Client Name Map Eval],
+     ApplyMap('Map Client',ApplyMap('Map Partner',SellingAgent,SellingAgent)&'|'&Upper(Surname),Upper(Surname)) as AwxClient, 
+     ApplyMap('Map Partner',SellingAgent,SellingAgent) as Partner,
+     ApplyMap('BDM_Mapping', ApplyMap('Map Partner',SellingAgent,SellingAgent),'To be mapped') as BDM,
+     [ZAR MarketValue] as AssetValue,
+     ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) as 'ProductProvider',
+     'ALG' as check,
+     ApplyMap('CashProductProvider',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Exclude Cash],
+     ApplyMap('ProductProviderType',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Type],
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') as DateMonth,
+     FSP,
+     [FSP Broker Code]
+FROM
+[$(vDataLoad)*AW - Nedgroup International.xlsx]
+(ooxml, embedded labels, table is Sheet1);
+
+
+
+
+
+//OMI
+Concatenate(AuA_TMP)
+LOAD 
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') & '|' & applymap('Map Partner',[Agent Name], [Agent Name]) & '|' &   Subfield(FileBaseName(), '- ', 2) & '|' & ApplyMap('Map Client',[Owner],[Owner]) as [KeyAuA],
+     ApplyMap('Map Partner',[Agent Name],[Agent Name]) as Partner,
+     ApplyMap('BDM_Mapping',ApplyMap('Map Partner',[Agent Name],[Agent Name]) ,'To be mapped') as BDM,     
+     ApplyMap('Map Client',ApplyMap('Map Partner',[Agent Name],[Agent Name])&'|'&Upper([Owner]),Upper([Owner])) as AwxClient,  
+     ApplyMap('Map Xplan ID',ApplyMap('Map Partner',[Agent Name],[Agent Name])&'|'&Upper([Owner]),Upper([Owner])) as EntityID,  
+	 if(isnum(ApplyMap('Map Xplan ID',ApplyMap('Map Partner',[Agent Name],[Agent Name])&'|'&Upper([Owner]),Upper([Owner]))), 'Mapped','Unmapped') as [Client Name Map Eval],
+     Upper(Owner) as SourceClient,
+     [Policy No] as PolicyNumber, 
+     Upper(Trim([Product Name])) as Product,
+     Upper(Trim(Fund)) as FundNameSource,
+     ApplyMap('Fund_Mapping_FundGroup',[Policy No] & ' || ' &  Upper(Trim(Fund)),'To be mapped') as FundGroup,
+     ApplyMap('Fund_Mapping_FeeGenerating',[Policy No] & ' || ' &  Upper(Trim(Fund)),[Policy No] & ' || ' &  Upper(Trim(Fund))) as [Fee Generating], 
+     [ZAR Fund Value] as AssetValue,
+     ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) as 'ProductProvider',
+     'ALG' as check,
+     ApplyMap('CashProductProvider',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Exclude Cash],
+     ApplyMap('ProductProviderType',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Type],
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') as DateMonth,
+     FSP,
+     [FSP Broker Code]
+FROM
+[$(vDataLoad)*AW - Old Mutual International.xlsx]
+(ooxml, embedded labels, table is Sheet1);
+
+
+
+
+
+//Investec International
+Concatenate(AuA_TMP)
+LOAD 
+	 Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') & '|' & applymap('Map Partner',LP, LP) & '|' &   Subfield(FileBaseName(), '- ', 2) & '|' & ApplyMap('Map Client',[Investor: Investor Name],[Investor: Investor Name]) as [KeyAuA],
+	 ApplyMap('Map Client',ApplyMap('Map Partner',LP,LP)&'|'&Upper([Investor: Investor Name]),Upper([Investor: Investor Name])) as AwxClient,
+	 ApplyMap('Map Xplan ID',ApplyMap('Map Partner',LP,LP)&'|'&Upper([Investor: Investor Name]),Upper([Investor: Investor Name])) as EntityID,
+	 if(isnum(ApplyMap('Map Xplan ID',ApplyMap('Map Partner',LP,LP)&'|'&Upper([Investor: Investor Name]),Upper([Investor: Investor Name]))), 'Mapped','Unmapped') as [Client Name Map Eval],
+	 Upper([Investor: Investor Name]) as SourceClient,
+     ApplyMap('Map Partner',LP,LP) as Partner,
+     ApplyMap('BDM_Mapping', ApplyMap('Map Partner',LP,LP),'To be mapped') as BDM,
+     Upper(Trim(Fund)) as FundNameSource,
+     ApplyMap('Fund_Mapping_FundGroup',Upper(Trim(Fund)),'To be mapped') as FundGroup,
+     ApplyMap('Fund_Mapping_FeeGenerating',Upper(Trim(Fund)),Upper(Trim(Fund))) as [Fee Generating],
+     [LOB Account: Account ID]as PolicyNumber, 
+     Upper(Trim('PRODUCT INFORMATION IS NOT AVAILABLE')) as Product,
+     [End Day Value ZAR] as AssetValue,
+     ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) as 'ProductProvider',
+     'ALG' as check,
+     ApplyMap('CashProductProvider',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Exclude Cash],
+     ApplyMap('ProductProviderType',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Type],
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') as DateMonth,
+     FSP,
+     [FSP Broker Code]
+FROM
+[$(vDataLoad)*AW - Investec International.xlsx]
+(ooxml, embedded labels, table is Sheet1);
+
+
+
+
+
+//MAX
+Concatenate(AuA_TMP)
+LOAD 
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') & '|' & applymap('Map Partner',[Broker Name],[Broker Name]) & '|' &  ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))  & '|' & ApplyMap('Map Client',Client,Client) as [KeyAuA],
+     ApplyMap('Map Partner',[Broker Name],[Broker Name]) as Partner, 
+     ApplyMap('BDM_Mapping',ApplyMap('Map Partner', ApplyMap('Map Partner',[Broker Name],[Broker Name]),[Broker Name]) ,'To be mapped') as BDM,
+     [Contract ID] as PolicyNumber, 
+     //[Client No] as ClientRSAID, 
+     ApplyMap('Map Client',ApplyMap('Map Partner',[Broker Name],[Broker Name])&'|'&Upper([Contract ID] &'|'& [Client No]&'|'& 'Max') ,Upper([Contract ID] &'|'& [Client No]&'|'& 'Max')) as AwxClient,
+     ApplyMap('Map Xplan ID',ApplyMap('Map Partner',[Broker Name],[Broker Name])&'|'&Upper([Contract ID] &'|'& [Client No]&'|'& 'Max') ,Upper([Contract ID] &'|'& [Client No]&'|'& 'Max')) as EntityID,
+	 if(isnum(ApplyMap('Map Xplan ID',ApplyMap('Map Partner',[Broker Name],[Broker Name])&'|'&Upper([Contract ID] &'|'& [Client No]&'|'& 'Max') ,Upper([Contract ID] &'|'& [Client No]&'|'& 'Max'))), 'Mapped','Unmapped') as [Client Name Map Eval],
+     Upper([Contract ID] &'|'& [Client No]&'|'& 'Max') as SourceClient,
+
+     Upper(Trim([Product])) as Product,
+     Upper(Trim(Fund)) as FundNameSource,
+     ApplyMap('Fund_Mapping_FundGroup',Upper(Trim(Fund)),'To be mapped') as FundGroup, 
+     ApplyMap('Fund_Mapping_FeeGenerating',Upper(Trim(Fund)),Upper(Trim(Fund))) as [Fee Generating], 
+     [AUM] as AssetValue,
+     ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) as 'ProductProvider',
+     'ALG' as check,
+     ApplyMap('CashProductProvider',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Exclude Cash],
+     ApplyMap('ProductProviderType',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Type],
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') as DateMonth,
+     FSP,
+     [FSP Broker Code]
+FROM
+[$(vDataLoad)*AW - OM Max.xlsx]
+(ooxml, embedded labels, table is Sheet1);
+
+
+
+
+
+//OMUT
+Concatenate(AuA_TMP)
+LOAD  
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') & '|' & applymap('Map Partner',BrokerName, BrokerName) & '|' &  ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) & '|' & ApplyMap('Map Client',Client,Client)  as [KeyAuA],
+     ApplyMap('Map Partner',BrokerName,BrokerName) as Partner, 
+     ApplyMap('BDM_Mapping',ApplyMap('Map Partner',ApplyMap('Map Partner',BrokerName,BrokerName),BrokerName) ,'To be mapped') as BDM,
+     [Contract ID] as PolicyNumber, 
+     //[Client No] as ClientRSAID, 
+     ApplyMap('Map Client',ApplyMap('Map Partner',BrokerName,BrokerName)&'|'&Upper(Client),Upper(Client)) as AwxClient, 
+     ApplyMap('Map Xplan ID',ApplyMap('Map Partner',BrokerName,BrokerName)&'|'&Upper(Client),Upper(Client)) as EntityID,
+	  if(isnum(ApplyMap('Map Xplan ID',ApplyMap('Map Partner',BrokerName,BrokerName)&'|'&Upper(Client),Upper(Client))), 'Mapped','Unmapped') as [Client Name Map Eval],
+     Upper(Client) as SourceClient,
+     Upper(Trim([Product])) as Product,
+     Upper(Trim(Fund)) as FundNameSource,
+     ApplyMap('Fund_Mapping_FundGroup',Upper(Trim(Fund)),'To be mapped') as FundGroup, 
+     ApplyMap('Fund_Mapping_FeeGenerating',Upper(Trim(Fund)),Upper(Trim(Fund))) as [Fee Generating],
+     [AUM] as AssetValue,
+     ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) as 'ProductProvider',
+     'ALG' as check,
+     ApplyMap('CashProductProvider',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Exclude Cash],
+     ApplyMap('ProductProviderType',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Type],
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') as DateMonth,
+     FSP,
+     [FSP Broker Code]
+FROM
+[$(vDataLoad)*AW - OMUT.xlsx]
+(ooxml, embedded labels, table is Sheet1);
+
+
+
+
+
+//OMW
+Concatenate(AuA_TMP)
+LOAD 
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') & '|' & applymap('Map Partner', [Broker Name], [Broker Name]) & '|' & ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) & '|' &  ApplyMap('Map Client',Client,Client) as [KeyAuA],
+     ApplyMap('Map Partner',[Broker Name],[Broker Name]) as Partner, 
+     ApplyMap('BDM_Mapping',ApplyMap('Map Partner',ApplyMap('Map Partner',[Broker Name],[Broker Name]),[Broker Name]) ,'To be mapped') as BDM,
+     [Contract ID] as PolicyNumber,  
+     ApplyMap('Map Client',ApplyMap('Map Partner',[Broker Name],[Broker Name])&'|'&Upper(Client),Upper(Client)) as AwxClient,  
+     ApplyMap('Map Xplan ID',ApplyMap('Map Partner',[Broker Name],[Broker Name])&'|'&Upper(Client),Upper(Client)) as EntityID,
+	 if(isnum(ApplyMap('Map Xplan ID',ApplyMap('Map Partner',[Broker Name],[Broker Name])&'|'&Upper(Client),Upper(Client))), 'Mapped','Unmapped') as [Client Name Map Eval],
+     Upper(Client) as SourceClient,
+     Upper(Trim([Product])) as Product, 
+     Upper(Trim(Fund)) as FundNameSource,
+     ApplyMap('Fund_Mapping_FundGroup',[Contract ID] & ' || ' & Upper(Trim(Fund)),'To be mapped') as FundGroup, 
+     ApplyMap('Fund_Mapping_FeeGenerating',[Contract ID] & ' || ' & Upper(Trim(Fund)),[Contract ID] & ' || ' & Upper(Trim(Fund))) as [Fee Generating],
+     [AUM] as AssetValue,
+     ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) as 'ProductProvider',
+     'ALG' as check,
+     ApplyMap('CashProductProvider',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Exclude Cash],
+     ApplyMap('ProductProviderType',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Type],
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') as DateMonth,
+     FSP,
+     [FSP Broker Code]
+FROM
+[$(vDataLoad)*AW - OMW.xlsx]
+(ooxml, embedded labels, table is Sheet1);
+
+
+
+
+
+//OMW Treasury
+Concatenate(AuA_TMP)
+LOAD 
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') & '|' &  ApplyMap('Map Partner',[Broker Name],[Broker Name])& '|' & ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) & '|' & ApplyMap('Map Client',[clientname],[clientname]) as [KeyAuA],
+     ApplyMap('Map Partner',[Broker Name],[Broker Name]) as Partner,
+     ApplyMap('BDM_Mapping', ApplyMap('Map Partner',[Broker Name],[Broker Name]),'To be mapped') as BDM,
+     ApplyMap('Map Client',ApplyMap('Map Partner',[Broker Name],[Broker Name])&'|'&Upper([clientname]),Upper([clientname])) as AwxClient, 
+     Upper(clientname) as SourceClient,
+     ApplyMap('Map Xplan ID',ApplyMap('Map Partner',[Broker Name],[Broker Name])&'|'&Upper([clientname]),Upper([clientname])) as EntityID,
+	 if(isnum(ApplyMap('Map Xplan ID',ApplyMap('Map Partner',[Broker Name],[Broker Name])&'|'&Upper([clientname]),Upper([clientname]))), 'Mapped','Unmapped') as [Client Name Map Eval],
+     AUM as AssetValue, 
+     ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) as 'ProductProvider',
+     'ALG' as check,
+     ApplyMap('CashProductProvider',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Exclude Cash],
+     ApplyMap('ProductProviderType',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Type],
+     Upper(Trim('PRODUCT INFORMATION IS NOT AVAILABLE')) as Product,
+     contractid as PolicyNumber,
+     Upper(Trim('No fund information available')) as FundNameSource,
+     ApplyMap('Fund_Mapping_FundGroup',Upper(Trim('No fund information available')),'To be mapped') as FundGroup,
+     ApplyMap('Fund_Mapping_FeeGenerating',Upper(Trim('No fund information available')),Upper(Trim('No fund information available'))) as [Fee Generating],
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') as DateMonth,
+     FSP,
+     [FSP Broker Code] 
+FROM
+[$(vDataLoad)*AW - Old Mutual Treasury.xlsx]
+(ooxml, embedded labels, table is Sheet1);
+
+
+
+
+
+//PCS Direct
+Concatenate(AuA_TMP)
+LOAD 
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') & '|' &  ApplyMap('Map Partner',Partner,Partner)& '|' & Subfield(FileBaseName(), '- ', 2) & '|' &  ApplyMap('Map Client',PCSDirectClient,PCSDirectClient)  as [KeyAuA],
+     PCSAccountNumber as PolicyNumber,  
+     ApplyMap('Map Partner',Partner,Partner) as Partner,
+     ApplyMap('BDM_Mapping',ApplyMap('Map Partner',Partner,Partner) ,'To be mapped') as BDM,
+     ApplyMap('Map Client',ApplyMap('Map Partner',Partner,Partner)&'|'&Upper(PCSDirectClient),Upper(PCSDirectClient)) as AwxClient,
+     ApplyMap('Map Xplan ID',ApplyMap('Map Partner',Partner,Partner)&'|'&Upper(PCSDirectClient),Upper(PCSDirectClient)) as EntityID,
+	 if(isnum(ApplyMap('Map Xplan ID',ApplyMap('Map Partner',Partner,Partner)&'|'&Upper(PCSDirectClient),Upper(PCSDirectClient))), 'Mapped','Unmapped') as [Client Name Map Eval],
+     Upper(PCSDirectClient) as SourceClient,
+     [Converted AuM] as AssetValue, 
+     Upper(Trim('PCS Direct')) as Product,
+     Upper(Trim('PCS Direct'))  as FundNameSource,
+     ApplyMap('Fund_Mapping_FundGroup',Upper(Trim('PCS Direct')),'To be mapped') as FundGroup,  
+     ApplyMap('Fund_Mapping_FeeGenerating',Upper(Trim('PCS Direct')),Upper(Trim('PCS Direct'))) as [Fee Generating],   
+     ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) as 'ProductProvider',
+     'ALG' as check,
+     ApplyMap('CashProductProvider',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Exclude Cash],
+     ApplyMap('ProductProviderType',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Type],
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') as DateMonth,
+     FSP,
+     [FSP Broker Code]
+FROM
+[$(vDataLoad)*AW - PCS Direct.xlsx]
+(ooxml, embedded labels, table is Sheet1);
+
+
+
+
+
+//PPSI
+Concatenate(AuA_TMP)
+LOAD 
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') & '|' & applymap('Map Partner',INTERMEDIARYNAME, INTERMEDIARYNAME) & '|' & ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) & '|' & ApplyMap('Map Client',PPSName,PPSName) as [KeyAuA],
+     Upper(Trim(PRODUCTNAME)) as Product,
+     Upper(Trim(FUNDNAME)) as FundNameSource,
+     ApplyMap('Fund_Mapping_FundGroup',Upper(Trim(FUNDNAME)),'To be mapped') as FundGroup,
+     ApplyMap('Fund_Mapping_FeeGenerating',Upper(Trim(FUNDNAME)),Upper(Trim(FUNDNAME))) as [Fee Generating],
+     CONTRACTNO as PolicyNumber, 
+     Upper(PPSName) as SourceClient,
+     ApplyMap('Map Xplan ID',ApplyMap('Map Partner',INTERMEDIARYNAME,INTERMEDIARYNAME)&'|'&Upper(PPSName),Upper(PPSName)) as EntityID, 
+	 if(isnum(ApplyMap('Map Xplan ID',ApplyMap('Map Partner',INTERMEDIARYNAME,INTERMEDIARYNAME)&'|'&Upper(PPSName),Upper(PPSName))), 'Mapped','Unmapped') as [Client Name Map Eval],
+     ApplyMap('Map Client',ApplyMap('Map Partner',INTERMEDIARYNAME,INTERMEDIARYNAME)&'|'&Upper(PPSName),Upper(PPSName)) as AwxClient,
+     ApplyMap('Map Partner',INTERMEDIARYNAME,INTERMEDIARYNAME) as Partner, 
+     ApplyMap('BDM_Mapping',ApplyMap('Map Partner',INTERMEDIARYNAME,INTERMEDIARYNAME) ,'To be mapped') as BDM,
+     MARKETVALUE as AssetValue,
+     ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) as 'ProductProvider',
+     'ALG' as check,
+     ApplyMap('CashProductProvider',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Exclude Cash],
+     ApplyMap('ProductProviderType',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Type],
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') as DateMonth,
+     FSP,
+     [FSP Broker Code]
+FROM
+[$(vDataLoad)*AW - PPSI.xlsx]
+(ooxml, embedded labels, table is Sheet1);
+
+
+
+
+//Sygnia Alchemy
+Concatenate(AuA_TMP)
+LOAD 
+      Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') & '|' & ApplyMap('Map Partner',[Advisor Name],[Advisor Name])& '|' & ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) & '|' & ApplyMap('Map Client',ClientFullName,ClientFullName) as [KeyAuA],
+      ApplyMap('Map Partner',[Advisor Name],[Advisor Name]) as Partner,
+      ApplyMap('BDM_Mapping',ApplyMap('Map Partner',[Advisor Name],[Advisor Name]) ,'To be mapped') as BDM,
+      ApplyMap('Map Client',ApplyMap('Map Partner',[Advisor Name],[Advisor Name])&'|'&Upper(ClientFullName),Upper(ClientFullName)) as AwxClient,
+      ApplyMap('Map Xplan ID',ApplyMap('Map Partner',[Advisor Name],[Advisor Name])&'|'&Upper(ClientFullName),Upper(ClientFullName)) as EntityID,
+      if(isnum(ApplyMap('Map Xplan ID',ApplyMap('Map Partner',[Advisor Name],[Advisor Name])&'|'&Upper(ClientFullName),Upper(ClientFullName))), 'Mapped','Unmapped') as [Client Name Map Eval],
+      ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) as 'ProductProvider',
+      'ALG' as check,
+      ApplyMap('CashProductProvider',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Exclude Cash],
+      ApplyMap('ProductProviderType',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Type],
+      Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') as DateMonth,
+      Upper(ClientFullName) as SourceClient,
+      [Market Value] as AssetValue,
+      Upper(Trim('No fund information available')) as FundNameSource,
+      ApplyMap('Fund_Mapping_FundGroup',Upper(Trim('No fund information available')),'To be mapped') as FundGroup,
+      ApplyMap('Fund_Mapping_FeeGenerating',Upper(Trim('No fund information available')),Upper(Trim('No fund information available'))) as [Fee Generating], 
+        Upper(Trim('PRODUCT INFORMATION IS NOT AVAILABLE')) as Product,
+      FSP,
+      [FSP Broker Code]
+FROM
+[$(vDataLoad)*AW - Sygnia Alchemy.xlsx]
+(ooxml, embedded labels, table is Sheet1);     
+
+
+
+
+//Prudential UT
+Concatenate(AuA_TMP)
+LOAD 
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') & '|' & applymap('Map Partner',[Financial advisor name], [Financial advisor name])  & '|' &  Subfield(FileBaseName(), '- ', 2) & '|' & ApplyMap('Map Client',[Investor name],[Investor name])  as [KeyAuA],
+     ApplyMap('Map Partner',[Financial advisor name],[Financial advisor name]) as Partner,
+     ApplyMap('BDM_Mapping', ApplyMap('Map Partner',[Financial advisor name],[Financial advisor name]),'To be mapped') as BDM, 
+     ApplyMap('Map Client',ApplyMap('Map Partner',[Financial advisor name],[Financial advisor name])&'|'&Upper([Investor name]),Upper([Investor name])) as AwxClient,
+     ApplyMap('Map Xplan ID',ApplyMap('Map Partner',[Financial advisor name],[Financial advisor name])&'|'&Upper([Investor name]),Upper([Investor name])) as EntityID,
+	 if(isnum(ApplyMap('Map Xplan ID',ApplyMap('Map Partner',[Financial advisor name],[Financial advisor name])&'|'&Upper([Investor name]),Upper([Investor name]))), 'Mapped','Unmapped') as [Client Name Map Eval],
+     Upper([Investor name]) as SourceClient, 
+     Upper(Trim(Investment)) as Product, 
+     [Fund number] as PolicyNumber, 
+     Upper(Trim([Fund name])) as FundNameSource,
+     ApplyMap('Fund_Mapping_FundGroup',Upper(Trim([Fund name])),'To be mapped') as FundGroup, 
+     ApplyMap('Fund_Mapping_FeeGenerating',Upper(Trim([Fund name])),Upper(Trim([Fund name]))) as [Fee Generating],
+     [Market value] as AssetValue,
+     ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) as 'ProductProvider',
+     'ALG' as check,
+     ApplyMap('CashProductProvider',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Exclude Cash],
+     ApplyMap('ProductProviderType',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Type],
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') as DateMonth,
+     FSP,
+     [FSP Broker Code]  
+FROM
+[$(vDataLoad)*AW - Prudential UT.xlsx]
+(ooxml, embedded labels, table is Sheet1);
+
+
+
+
+
+//Prudential PIP
+Concatenate(AuA_TMP)
+LOAD 
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') & '|' & applymap('Map Partner',[Financial advisor name], [Financial advisor name]) & '|' & Subfield(FileBaseName(), '- ', 2) & '|' & ApplyMap('Map Client',[Investor name],[Investor name]) as [KeyAuA],
+     ApplyMap('Map Partner',[Financial advisor name],[Financial advisor name]) as Partner, 
+     ApplyMap('BDM_Mapping',ApplyMap('Map Partner',[Financial advisor name],[Financial advisor name]) ,'To be mapped') as BDM,
+     ApplyMap('Map Client',ApplyMap('Map Partner',[Financial advisor name],[Financial advisor name])&'|'&Upper([Investor name]),Upper([Investor name])) as AwxClient, 
+     ApplyMap('Map Xplan ID',ApplyMap('Map Partner',[Financial advisor name],[Financial advisor name])&'|'&Upper([Investor name]),Upper([Investor name])) as EntityID,
+	 if(isnum(ApplyMap('Map Xplan ID',ApplyMap('Map Partner',[Financial advisor name],[Financial advisor name])&'|'&Upper([Investor name]),Upper([Investor name]))), 'Mapped','Unmapped') as [Client Name Map Eval],
+     Upper([Investor name]) as SourceClient,
+     Upper(Trim(Investment)) as Product, 
+     [Fund number] as PolicyNumber, 
+     Upper(Trim([Fund name])) as FundNameSource,
+     ApplyMap('Fund_Mapping_FundGroup',Upper(Trim([Fund name])),'To be mapped') as FundGroup,
+     ApplyMap('Fund_Mapping_FeeGenerating',Upper(Trim([Fund name])),Upper(Trim([Fund name]))) as [Fee Generating], 
+     [Market value] as AssetValue,
+     ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) as 'ProductProvider',
+     'ALG' as check,
+     ApplyMap('CashProductProvider',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Exclude Cash],
+     ApplyMap('ProductProviderType',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Type],
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') as DateMonth,
+     FSP,
+     [FSP Broker Code]  
+FROM
+[$(vDataLoad)*AW - Prudential PIP.xlsx]
+(ooxml, embedded labels, table is Sheet1);
+
+
+
+
+
+//PSG
+Concatenate(AuA_TMP)
+LOAD 
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') & '|' & ApplyMap('Map Partner',PSGBROKER,PSGBROKER)& '|' & Subfield(FileBaseName(), '- ', 2) & '|' & ApplyMap('Map Client',PSGNAME,PSGNAME) as [KeyAuA], 
+     ApplyMap('Map Client',ApplyMap('Map Partner',PSGBROKER,PSGBROKER)&'|'&Upper(PSGNAME),Upper(PSGNAME)) as AwxClient, 
+     ApplyMap('Map Xplan ID',ApplyMap('Map Partner',PSGBROKER,PSGBROKER)&'|'&Upper(PSGNAME),Upper(PSGNAME)) as EntityID,
+	 if(isnum(ApplyMap('Map Xplan ID',ApplyMap('Map Partner',PSGBROKER,PSGBROKER)&'|'&Upper(PSGNAME),Upper(PSGNAME))), 'Mapped','Unmapped') as [Client Name Map Eval],
+     Upper(PSGNAME) as SourceClient,
+     [Policy Number] as PolicyNumber, 
+     Upper(Trim([Product Name])) as Product,   
+     //[Investor ID] as ClientRSAID,  
+     Upper(Trim([Fund Name])) as FundNameSource,
+     ApplyMap('Fund_Mapping_FundGroup',Upper(Trim([Fund Name])),'To be mapped') as FundGroup,
+     ApplyMap('Fund_Mapping_FeeGenerating',Upper(Trim([Fund Name])),Upper(Trim([Fund Name]))) as [Fee Generating], 
+     ApplyMap('Map Partner',PSGBROKER,PSGBROKER) as Partner,
+     ApplyMap('BDM_Mapping',ApplyMap('Map Partner',PSGBROKER,PSGBROKER) ,'To be mapped') as BDM,
+     Value as AssetValue,
+     ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) as 'ProductProvider',
+     'ALG' as check,
+     ApplyMap('CashProductProvider',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Exclude Cash],
+     ApplyMap('ProductProviderType',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Type],
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') as DateMonth,
+     FSP,
+     [FSP Broker Code]
+FROM
+[$(vDataLoad)*AW - PSG.xlsx]
+(ooxml, embedded labels, table is Sheet1);
+
+
+
+
+
+//Prescient
+Concatenate(AuA_TMP)
+LOAD
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') & '|' &  ApplyMap('Map Partner',BrokerName,BrokerName)& '|' & Subfield(FileBaseName(), '- ', 2) & '|' &  ApplyMap('Map Client',[Investor name],[Investor name]) as [KeyAuA],
+     ApplyMap('Map Client',ApplyMap('Map Partner',BrokerName,BrokerName)&'|'&Upper([Investor name]),Upper([Investor name])) as AwxClient,
+     ApplyMap('Map Xplan ID',ApplyMap('Map Partner',BrokerName,BrokerName)&'|'&Upper([Investor name]),Upper([Investor name])) as EntityID,
+	 if(isnum(ApplyMap('Map Xplan ID',ApplyMap('Map Partner',FSP,FSP)&'|'&Upper([Investor name]),Upper([Investor name]))), 'Mapped','Unmapped') as [Client Name Map Eval],
+     Upper([Investor name]) as SourceClient, 
+     Value as AssetValue, 
+     Upper(Trim([Asset Group])) as FundNameSource,
+     ApplyMap('Fund_Mapping_FundGroup',Upper(Trim([Asset Group])),'To be mapped') as FundGroup,
+     ApplyMap('Fund_Mapping_FeeGenerating',Upper(Trim([Asset Group])),Upper(Trim([Asset Group]))) as [Fee Generating], 
+     Upper(Trim(Product)) as Product, 
+     ApplyMap('Map Partner',BrokerName,BrokerName) as Partner,
+     ApplyMap('BDM_Mapping',ApplyMap('Map Partner',BrokerName,BrokerName) ,'To be mapped') as BDM,
+     ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) as 'ProductProvider',
+     'ALG' as check,
+     ApplyMap('CashProductProvider',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Exclude Cash],
+     ApplyMap('ProductProviderType',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Type],     
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') as DateMonth,
+     FSP,
+     [FSP Broker Code]
+FROM
+[$(vDataLoad)*AW - Prescient.xlsx]
+(ooxml, embedded labels, table is Sheet1);
+
+
+
+
+
+//Sasfin
+Concatenate(AuA_TMP)
+LOAD 
+	 Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') & '|' &  ApplyMap('Map Partner',Partner,Partner)& '|' & Subfield(FileBaseName(), '- ', 2) & '|' &  ApplyMap('Map Client',[AccName],[AccName]) as [KeyAuA],
+	 ApplyMap('Map Partner',Partner,Partner) as Partner,
+	 ApplyMap('BDM_Mapping',ApplyMap('Map Partner',Partner,Partner) ,'To be mapped') as BDM,
+     Accno as PolicyNumber, 
+     Upper(Trim('PRODUCT INFORMATION IS NOT AVAILABLE')) as Product,
+     ApplyMap('Map Client',ApplyMap('Map Partner',Partner,Partner)&'|'&Upper(AccName),Upper(AccName)) as AwxClient,
+     ApplyMap('Map Xplan ID',ApplyMap('Map Partner',Partner,Partner)&'|'&Upper(AccName),Upper(AccName)) as EntityID,
+	 if(isnum(ApplyMap('Map Xplan ID',ApplyMap('Map Partner',Partner,Partner)&'|'&Upper(AccName),Upper(AccName))), 'Mapped','Unmapped') as [Client Name Map Eval],
+     Upper(AccName) as SourceClient,
+     [Portfolio] as AssetValue,
+     Upper(Trim('No fund information available')) as FundNameSource,
+     ApplyMap('Fund_Mapping_FundGroup',Upper(Trim('No fund information available')),'To be mapped') as FundGroup, 
+     ApplyMap('Fund_Mapping_FeeGenerating',Upper(Trim('No fund information available')),Upper(Trim('No fund information available'))) as [Fee Generating],
+     ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) as 'ProductProvider',
+     'ALG' as check,
+     ApplyMap('CashProductProvider',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Exclude Cash],
+     ApplyMap('ProductProviderType',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Type],
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') as DateMonth,
+     FSP,
+     [FSP Broker Code]
+FROM
+[$(vDataLoad)*AW - Sasfin.xlsx]
+(ooxml, embedded labels, table is Sheet1);
+
+
+
+
+
+//Sanlam Glacier
+Concatenate(AuA_TMP)
+LOAD 
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') & '|' & ApplyMap('Map Partner',Broker,Broker)  & '|' & Subfield(FileBaseName(), '- ', 2)  & '|' &  ApplyMap('Map Client',[Client Name],[Client Name]) as [KeyAuA],
+     ApplyMap('Map Client',ApplyMap('Map Partner',Broker,Broker)&'|'&Upper([Client Name]),Upper([Client Name])) as AwxClient, 
+     ApplyMap('Map Xplan ID',ApplyMap('Map Partner',Broker,Broker)&'|'&Upper([Client Name]),Upper([Client Name])) as EntityID,
+	 if(isnum(ApplyMap('Map Xplan ID',ApplyMap('Map Partner',Broker,Broker)&'|'&Upper([Client Name]),Upper([Client Name]))), 'Mapped','Unmapped') as [Client Name Map Eval],
+     Upper([Client Name]) as SourceClient,
+     //[ID NUMBER OR REGISTRATION NUMBER] as ClientRSAID, 
+     CONTRACTNUMBER as PolicyNumber,
+     Upper(Trim(PRODUCT)) as Product, 
+     Upper(Trim(FUNDNAME)) as FundNameSource,
+     ApplyMap('Fund_Mapping_FundGroup',CONTRACTNUMBER & ' || ' & Upper(Trim(FUNDNAME)),'To be mapped') as FundGroup,
+     ApplyMap('Fund_Mapping_FeeGenerating',CONTRACTNUMBER & ' || ' & Upper(Trim(FUNDNAME)),CONTRACTNUMBER & ' || ' & Upper(Trim(FUNDNAME))) as [Fee Generating],
+     AMOUNT as AssetValue, 
+     ApplyMap('Map Partner',Broker,Broker) as Partner,
+     ApplyMap('BDM_Mapping',ApplyMap('Map Partner',Broker,Broker) ,'To be mapped') as BDM,
+     ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) as 'ProductProvider',
+     'ALG' as check,
+     ApplyMap('CashProductProvider',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Exclude Cash],
+     ApplyMap('ProductProviderType',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Type], 
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') as DateMonth,
+     FSP,
+     [FSP Broker Code]
+FROM
+[$(vDataLoad)*AW - Sanlam Glacier.xlsx]
+(ooxml, embedded labels, table is Sheet1);
+
+
+
+
+
+//Sanlam Glacier International
+Concatenate(AuA_TMP)
+LOAD
+    Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') & '|' &   ApplyMap('Map Partner',BROKER_NAME,BROKER_NAME) & '|' & Subfield(FileBaseName(), '- ', 2) & '|' & ApplyMap('Map Client',CLIENT,CLIENT)as [KeyAuA],
+     PLAN_NR as PolicyNumber,
+     Upper(Trim(PRODUCT)) as Product,  
+     ApplyMap('Map Client',ApplyMap('Map Partner',BROKER_NAME,BROKER_NAME)&'|'&Upper(CLIENT),Upper(CLIENT)) as AwxClient,
+     ApplyMap('Map Xplan ID',ApplyMap('Map Partner',BROKER_NAME,BROKER_NAME)&'|'&Upper(CLIENT),Upper(CLIENT)) as EntityID,
+	 if(isnum( ApplyMap('Map Xplan ID',ApplyMap('Map Partner',BROKER_NAME,BROKER_NAME)&'|'&Upper(CLIENT),Upper(CLIENT))), 'Mapped','Unmapped') as [Client Name Map Eval],
+     Upper(CLIENT) as SourceClient,
+     ApplyMap('Map Partner',BROKER_NAME,BROKER_NAME) as Partner,  
+     ApplyMap('BDM_Mapping',ApplyMap('Map Partner',BROKER_NAME,BROKER_NAME) ,'To be mapped') as BDM,
+     Upper(Trim(FUND_NAME)) as FundNameSource,
+     ApplyMap('Fund_Mapping_FundGroup',PLAN_NR & ' || ' & Upper(Trim(FUND_NAME)),'To be mapped') as FundGroup, 
+     ApplyMap('Fund_Mapping_FeeGenerating',PLAN_NR & ' || ' & Upper(Trim(FUND_NAME)),PLAN_NR & ' || ' & Upper(Trim(FUND_NAME))) as [Fee Generating],
+     FUNDS_UNDER_MANAGEMENT_ZAR_Result as AssetValue,
+     ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) as 'ProductProvider',
+     'ALG' as check,
+     ApplyMap('CashProductProvider',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Exclude Cash],
+     ApplyMap('ProductProviderType',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Type],
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') as DateMonth,
+     FSP,
+     [FSP Broker Code]
+FROM
+[$(vDataLoad)*AW - Sanlam Glacier International.xlsx]
+(ooxml, embedded labels, table is Sheet1);
+
+
+
+
+
+//Sanlam Life
+Concatenate(AuA_TMP)
+LOAD 
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') & '|' &  ApplyMap('Map Partner',Partner,Partner)& '|' & Subfield(FileBaseName(), '- ', 2) & '|' & ApplyMap('Map Client',Client,Client) as [KeyAuA],
+     ApplyMap('Map Client',ApplyMap('Map Partner',Partner,Partner)&'|'&Upper(Client),Upper(Client)) as AwxClient, 
+     ApplyMap('Map Xplan ID',ApplyMap('Map Partner',Partner,Partner)&'|'&Upper(Client),Upper(Client)) as EntityID, 
+	 if(isnum(ApplyMap('Map Xplan ID',ApplyMap('Map Partner',Partner,Partner)&'|'&Upper(Client),Upper(Client))), 'Mapped','Unmapped') as [Client Name Map Eval],
+     Upper(Client) as SourceClient,
+     [Plan
+number] as PolicyNumber, 
+	 Upper(Trim('PRODUCT INFORMATION IS NOT AVAILABLE')) as Product,
+     [Total investment
+value (R)] as AssetValue, 
+	 Upper(Trim([Investment fund name])) as FundNameSource,
+	 ApplyMap('Fund_Mapping_FundGroup',Upper(Trim([Investment fund name])),'To be mapped') as FundGroup,
+	 ApplyMap('Fund_Mapping_FeeGenerating',Upper(Trim([Investment fund name])),Upper(Trim([Investment fund name]))) as [Fee Generating],
+	 ApplyMap('Map Partner',Partner,Partner) as Partner,
+	 ApplyMap('BDM_Mapping',ApplyMap('Map Partner',Partner,Partner) ,'To be mapped') as BDM,
+     ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) as 'ProductProvider',
+     'ALG' as check,
+     ApplyMap('CashProductProvider',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Exclude Cash],
+     ApplyMap('ProductProviderType',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Type],
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') as DateMonth,
+     FSP,
+     [FSP Broker Code]
+FROM
+[$(vDataLoad)*AW - Sanlam Life.xlsx]
+(ooxml, embedded labels, table is Sheet1);
+
+
+
+
+
+//Stanlib
+Concatenate(AuA_TMP)
+LOAD 
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') & '|' & ApplyMap('Map Partner',Agentname,Agentname) & '|' & Subfield(FileBaseName(), '- ', 2) & '|' &  ApplyMap('Map Client',[CN Name],[CN Name]) as [KeyAuA],
+     InvestmentNumber as PolicyNumber,
+     ApplyMap('Map Client',ApplyMap('Map Partner',Agentname,Agentname)&'|'&Upper([CN Name]),Upper([CN Name])) as AwxClient, 
+     ApplyMap('Map Xplan ID',ApplyMap('Map Partner',Agentname,Agentname)&'|'&Upper([CN Name]),Upper([CN Name])) as EntityID,
+	 if(isnum(ApplyMap('Map Xplan ID',ApplyMap('Map Partner',Agentname,Agentname)&'|'&Upper([CN Name]),Upper([CN Name]))), 'Mapped','Unmapped') as [Client Name Map Eval],
+     Upper([CN Name]) as SourceClient,
+     ApplyMap('Map Partner',Agentname,Agentname) as Partner,
+     ApplyMap('BDM_Mapping',ApplyMap('Map Partner',Agentname,Agentname) ,'To be mapped') as BDM,
+     Upper(Trim(Fund))as FundNameSource,
+     ApplyMap('Fund_Mapping_FundGroup',Upper(Trim(Fund)) & ' || ' & Upper(Trim(ModelPortfolioName)),'To be mapped') as FundGroup,
+     ApplyMap('Fund_Mapping_FeeGenerating',Upper(Trim(Fund)) & ' || ' & Upper(Trim(ModelPortfolioName)),Upper(Trim(Fund)) & ' || ' & Upper(Trim(ModelPortfolioName))) as [Fee Generating],
+     Upper(Trim(Product))as Product, 
+     [ZAR Account Balance] as AssetValue,
+     //ClientIDOrCorporateNumber as ClientRSAID,
+     ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) as 'ProductProvider',
+     'ALG' as check,
+     ApplyMap('CashProductProvider',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Exclude Cash],
+     ApplyMap('ProductProviderType',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Type], 
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') as DateMonth,
+     FSP,
+     [FSP Broker Code]
+FROM
+[$(vDataLoad)*AW - Stanlib.xlsx]
+(ooxml, embedded labels, table is Sheet1);
+
+
+
+
+
+//Ramsey Crookall
+Concatenate(AuA_TMP)
+LOAD
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') & '|' & ApplyMap('Map Partner',[Financial Adviser],[Financial Adviser]) & '|' & Subfield(FileBaseName(), '- ', 2) & '|' &  ApplyMap('Map Client',[Account Name],[Account Name]) as [KeyAuA],
+	 [Client (RC Account Number)] as PolicyNumber,
+	 Upper(Trim('PRODUCT INFORMATION IS NOT AVAILABLE')) as Product, 
+     ApplyMap('Map Client',ApplyMap('Map Partner',[Financial Adviser],[Financial Adviser])&'|'&Upper([Account Name]),Upper([Account Name])) as AwxClient, 
+     ApplyMap('Map Xplan ID',ApplyMap('Map Partner',[Financial Adviser],[Financial Adviser])&'|'&Upper([Account Name]),Upper([Account Name])) as EntityID, 
+	 if(isnum(ApplyMap('Map Xplan ID',ApplyMap('Map Partner',[Financial Adviser],[Financial Adviser])&'|'&Upper([Account Name]),Upper([Account Name]))), 'Mapped','Unmapped') as [Client Name Map Eval], 
+     Upper([Account Name]) as SourceClient,
+     ApplyMap('Map Partner',[Financial Adviser],[Financial Adviser]) as Partner,
+     ApplyMap('BDM_Mapping',ApplyMap('Map Partner',[Financial Adviser],[Financial Adviser]) ,'To be mapped') as BDM,
+     Upper(Trim('No fund information available')) as FundNameSource,
+     ApplyMap('Fund_Mapping_FundGroup',Upper(Trim('No fund information available')),'To be mapped') as FundGroup,
+     ApplyMap('Fund_Mapping_FeeGenerating',Upper(Trim('No fund information available')),Upper(Trim('No fund information available'))) as [Fee Generating],
+     [Amount] as AssetValue,
+     ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) as 'ProductProvider',
+     'ALG' as check,
+     ApplyMap('CashProductProvider',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Exclude Cash],
+     ApplyMap('ProductProviderType',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Type],
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') as DateMonth,
+     FSP,
+     [FSP Broker Code]
+FROM
+[$(vDataLoad)*AW - Ramsey Crookall.xlsx]
+(ooxml, embedded labels, table is Sheet1);
+
+
+
+
+
+//Stratwealth
+Concatenate(AuA_TMP)
+LOAD
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') & '|' & ApplyMap('Map Partner',[Broker Name],[Broker Name])& '|' & ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) & '|' & ApplyMap('Map Client',[Client Name],[Client Name]) as [KeyAuA], 
+     ApplyMap('Map Partner',[Broker Name],[Broker Name]) as Partner,
+     ApplyMap('BDM_Mapping',ApplyMap('Map Partner',[Broker Name],[Broker Name]) ,'To be mapped') as BDM,
+     [Client Number] as PolicyNumber, 
+     ApplyMap('Map Client',ApplyMap('Map Partner',[Broker Name],[Broker Name])&'|'&Upper([Client Name]),Upper([Client Name])) as AwxClient,
+     ApplyMap('Map Xplan ID',ApplyMap('Map Partner',[Broker Name],[Broker Name])&'|'&Upper([Client Name]),Upper([Client Name])) as EntityID,
+     if(isnum(ApplyMap('Map Xplan ID',ApplyMap('Map Partner',[Broker Name],[Broker Name])&'|'&Upper([Client Name]),Upper([Client Name]))), 'Mapped','Unmapped') as [Client Name Map Eval], 
+     Upper([Client Name]) as SourceClient,
+     Upper(Trim(Product)) as Product, 
+     Upper(Trim(if([Fund] = '' or len(trim([Fund])) = 0 or [Fund] = '-', 'No fund information available', [Fund]))) as FundNameSource,
+     ApplyMap('Fund_Mapping_FundGroup',Upper(Trim(if([Fund] = '' or len(trim([Fund])) = 0 or [Fund] = '-', 'No fund information available', [Fund]))),'To be mapped') as FundGroup,
+     ApplyMap('Fund_Mapping_FeeGenerating',Upper(Trim(if([Fund] = '' or len(trim([Fund])) = 0 or [Fund] = '-', 'No fund information available', [Fund]))),Upper(Trim(if([Fund] = '' or len(trim([Fund])) = 0 or [Fund] = '-', 'No fund information available', [Fund])))) as [Fee Generating],
+     [Investment Amount] as AssetValue, 
+     ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) as 'ProductProvider',
+     'ALG' as check,
+     ApplyMap('CashProductProvider',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Exclude Cash],
+     ApplyMap('ProductProviderType',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Type], 
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') as DateMonth,
+     FSP,
+     [FSP Broker Code]
+FROM
+[$(vDataLoad)*AW - Stratwealth.xlsx]
+(ooxml, embedded labels, table is Sheet1);
+
+
+
+
+
+//Skybound
+Concatenate(AuA_TMP)
+LOAD 
+	 Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') & '|' & ApplyMap('Map Partner',[BROKER],[BROKER])& '|' & Subfield(FileBaseName(), '- ', 2) & '|' & ApplyMap('Map Client',[ClientNAME],[ClientNAME]) as [KeyAuA],
+	 [Policy Number] as PolicyNumber, 
+     Upper(Trim([Product Name]))as Product, 
+     ApplyMap('Map Client',ApplyMap('Map Partner',BROKER,BROKER)&'|'&Upper(ClientNAME),Upper(ClientNAME)) as AwxClient,
+     ApplyMap('Map Xplan ID',ApplyMap('Map Partner',BROKER,BROKER)&'|'&Upper(ClientNAME),Upper(ClientNAME)) as EntityID,
+	 if(isnum(ApplyMap('Map Xplan ID',ApplyMap('Map Partner',BROKER,BROKER)&'|'&Upper(ClientNAME),Upper(ClientNAME))), 'Mapped','Unmapped') as [Client Name Map Eval],
+     Upper(ClientNAME) as SourceClient, 
+     Upper(Trim(if([Fund Name] = '' or [Fund Name] = '-' or len(trim([Fund Name]))=0, 'No fund information available', [Fund Name]))) as FundNameSource,
+     ApplyMap('Fund_Mapping_FundGroup',Upper(Trim(if([Fund Name] = '' or [Fund Name] = '-' or len(trim([Fund Name]))=0, 'No fund information available', [Fund Name]))),'To be mapped') as FundGroup, 
+     ApplyMap('Fund_Mapping_FeeGenerating',Upper(Trim(if([Fund Name] = '' or [Fund Name] = '-' or len(trim([Fund Name]))=0, Upper(Trim(if([Fund Name] = '' or [Fund Name] = '-' or len(trim([Fund Name]))=0, 'No fund information available', [Fund Name]))), [Fund Name]))),'To be mapped') as [Fee Generating],
+     Value as AssetValue, 
+     ApplyMap('Map Partner',BROKER,BROKER) as Partner,
+     ApplyMap('BDM_Mapping',ApplyMap('Map Partner',BROKER,BROKER) ,'To be mapped') as BDM,
+     ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) as 'ProductProvider',
+     'ALG' as check,
+     ApplyMap('CashProductProvider',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Exclude Cash],
+     ApplyMap('ProductProviderType',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Type],  
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') as DateMonth,
+     FSP,
+     [FSP Broker Code]
+FROM
+[$(vDataLoad)*AW - Skybound.xlsx]
+(ooxml, embedded labels, table is Sheet1);
+
+
+
+
+
+//Stratwealth OffShore
+Concatenate(AuA_TMP)
+LOAD 
+	 Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') & '|' & ApplyMap('Map Partner',[Advisor Name],[Advisor Name])& '|' & ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) & '|' & ApplyMap('Map Client',[Account Holder Full Name],[Account Holder Full Name]) as [KeyAuA],
+	 ApplyMap('Map Client',ApplyMap('Map Partner',[Advisor Name],[Advisor Name])&'|'&Upper([Account Holder Full Name]),Upper([Account Holder Full Name])) as AwxClient,
+     ApplyMap('Map Xplan ID',ApplyMap('Map Partner',[Advisor Name],[Advisor Name])&'|'&Upper([Account Holder Full Name]),Upper([Account Holder Full Name])) as EntityID,
+	 if(isnum(ApplyMap('Map Xplan ID',ApplyMap('Map Partner',[Advisor Name],[Advisor Name])&'|'&Upper([Account Holder Full Name]),Upper([Account Holder Full Name]))), 'Mapped','Unmapped') as [Client Name Map Eval],
+     Upper([Account Holder Full Name]) as SourceClient, 
+     ApplyMap('Map Partner',[Advisor Name],[Advisor Name]) as Partner,
+     ApplyMap('BDM_Mapping',ApplyMap('Map Partner',[Advisor Name],[Advisor Name]) ,'To be mapped') as BDM,
+     [Sum_Balance in Fixed ZARequiv2] as AssetValue,
+     ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) as 'ProductProvider',
+     'ALG' as check,
+     ApplyMap('CashProductProvider',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Exclude Cash],
+     ApplyMap('ProductProviderType',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Type],
+     Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') as DateMonth,
+     FSP,
+     Upper(Trim('PRODUCT INFORMATION IS NOT AVAILABLE')) as Product,
+     Upper(Trim(if([Fund] = '' or len(trim([Fund])) = 0 or [Fund] = '-', 'No fund information available', [Fund]))) as FundNameSource,
+     ApplyMap('Fund_Mapping_FundGroup',Upper(Trim(if([Fund] = '' or len(trim([Fund])) = 0 or [Fund] = '-', 'No fund information available', [Fund]))),'To be mapped') as FundGroup, 
+     ApplyMap('Fund_Mapping_FeeGenerating',Upper(Trim(if([Fund] = '' or len(trim([Fund])) = 0 or [Fund] = '-', 'No fund information available', [Fund]))),Upper(Trim(if([Fund] = '' or len(trim([Fund])) = 0 or [Fund] = '-', 'No fund information available', [Fund])))) as [Fee Generating], 
+     [FSP Broker Code]
+FROM
+[$(vDataLoad)*AW - Stratwealth Offshore.xlsx]
+(ooxml, embedded labels, table is Sheet1);
+
+
+
+
+
+//Alexander Forbes
+Concatenate(AuA_TMP)
+LOAD 
+	  Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') & '|' & ApplyMap('Map Partner',[Partner],[Partner])& '|' & Subfield(FileBaseName(), '- ', 2) & '|' & ApplyMap('Map Client',[Client],[Client]) as [KeyAuA],
+	  ApplyMap('Map Partner',Partner,Partner) as Partner,
+	  ApplyMap('BDM_Mapping',ApplyMap('Map Partner',Partner,Partner) ,'To be mapped') as BDM,
+      ApplyMap('Map Client',ApplyMap('Map Partner',Partner,Partner)&'|'&Upper(Client),Upper(Client)) as AwxClient,
+      ApplyMap('Map Xplan ID',ApplyMap('Map Partner',Partner,Partner)&'|'&Upper(Client),Upper(Client)) as EntityID,
+	  if(isnum(ApplyMap('Map Xplan ID',ApplyMap('Map Partner',Partner,Partner)&'|'&Upper(Client),Upper(Client))), 'Mapped','Unmapped') as [Client Name Map Eval],
+      ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) as 'ProductProvider',
+      'ALG' as check,
+      ApplyMap('CashProductProvider',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Exclude Cash],
+      ApplyMap('ProductProviderType',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Type],
+      Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') as DateMonth,
+      Upper(Client) as SourceClient, 
+      Upper(Trim(Product))as Product, 
+      Upper(Trim(Fund)) as FundNameSource,
+      ApplyMap('Fund_Mapping_FundGroup',Upper(Trim(Fund)),'To be mapped') as FundGroup, 
+      ApplyMap('Fund_Mapping_FeeGenerating',Upper(Trim(Fund)),Upper(Trim(Fund))) as [Fee Generating],
+      Amount as AssetValue,
+      FSP,
+      [FSP Broker Code]
+FROM
+[$(vDataLoad)*AW - Alexander Forbes.xlsx]
+(ooxml, embedded labels, table is Sheet1);
+
+
+
+
+
+//Liberty Corporate 
+Concatenate(AuA_TMP)
+LOAD 
+	  Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') & '|' & ApplyMap('Map Partner',[Partner],[Partner])& '|' & ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) & '|' & ApplyMap('Map Client',[Client],[Client]) as [KeyAuA],
+	  ApplyMap('Map Partner',Partner,Partner) as Partner,
+	  ApplyMap('BDM_Mapping',ApplyMap('Map Partner',Partner,Partner) ,'To be mapped') as BDM,
+   	  ApplyMap('Map Client',ApplyMap('Map Partner',Partner,Partner)&'|'&Upper(Client),Upper(Client)) as AwxClient,
+      ApplyMap('Map Xplan ID',ApplyMap('Map Partner',Partner,Partner)&'|'&Upper(Client),Upper(Client)) as EntityID,
+	  if(isnum(ApplyMap('Map Xplan ID',ApplyMap('Map Partner',Partner,Partner)&'|'&Upper(Client),Upper(Client))), 'Mapped','Unmapped') as [Client Name Map Eval],
+      ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) as 'ProductProvider', 
+      'ALG' as check,
+      ApplyMap('CashProductProvider',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Exclude Cash],
+      ApplyMap('ProductProviderType',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Type],
+      Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') as DateMonth,
+      ClientNumber as PolicyNumber, 
+      Upper(Client) as SourceClient, 
+      Upper(Trim(Product)) as Product, 
+      Upper(Trim(Fund)) as FundNameSource,
+      ApplyMap('Fund_Mapping_FundGroup',Upper(Trim(Fund)),'To be mapped') as FundGroup, 
+      ApplyMap('Fund_Mapping_FeeGenerating',Upper(Trim(Fund)),Upper(Trim(Fund))) as [Fee Generating],
+      Amount as AssetValue,
+      FSP,
+      [FSP Broker Code]
+FROM
+[$(vDataLoad)*AW - Liberty Corporate.xlsx]
+(ooxml, embedded labels, table is Sheet1);
+
+
+
+
+
+//SBG Securities
+Concatenate(AuA_TMP)
+LOAD 
+	  Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') & '|' & ApplyMap('Map Partner',[Advisor Name],[Advisor Name])& '|' & ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) & '|' & ApplyMap('Map Client',[Short Name],[Short Name]) as [KeyAuA],
+	  ApplyMap('Map Partner',[Advisor Name],[Advisor Name]) as Partner,
+	  ApplyMap('BDM_Mapping',ApplyMap('Map Partner',[Advisor Name],[Advisor Name]) ,'To be mapped') as BDM,
+   	  ApplyMap('Map Client',ApplyMap('Map Partner',[Advisor Name],[Advisor Name])&'|'&Upper([Short Name]),Upper([Short Name])) as AwxClient,
+      ApplyMap('Map Xplan ID',ApplyMap('Map Partner',[Advisor Name],[Advisor Name])&'|'&Upper([Short Name]),Upper([Short Name])) as EntityID,
+	  if(isnum(ApplyMap('Map Xplan ID',ApplyMap('Map Partner',[Advisor Name],[Advisor Name])&'|'&Upper([Short Name]),Upper([Short Name]))), 'Mapped','Unmapped') as [Client Name Map Eval],
+      ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)) as 'ProductProvider', 
+      'ALG' as check,
+      ApplyMap('CashProductProvider',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Exclude Cash],
+      ApplyMap('ProductProviderType',ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2)),ApplyMap('ProductProviderMap',Subfield(FileBaseName(), '- ', 2),Subfield(FileBaseName(), '- ', 2))) as [Type],
+      Date(Date#((Subfield(FileBaseName(), ' AW -', 1)),'YYYYMM'),'MMM''YY') as DateMonth,
+      Upper([Short Name]) as SourceClient, 
+      AUM as AssetValue, 
+      Upper(Trim('No fund information available')) as FundNameSource,
+      ApplyMap('Fund_Mapping_FundGroup',Upper(Trim('No fund information available')),'To be mapped') as FundGroup,
+      ApplyMap('Fund_Mapping_FeeGenerating',Upper(Trim('No fund information available')),Upper(Trim('No fund information available'))) as [Fee Generating], 
+      Upper(Trim('PRODUCT INFORMATION IS NOT AVAILABLE')) as Product,
+      FSP,
+      [FSP Broker Code]
+FROM
+[$(vDataLoad)*AW - SBG Securities.xlsx]
+(ooxml, embedded labels, table is Sheet1);
+
+
+
+
+
+
+
+STORE [AuA_TMP] INTO [C:\Users\HenryM\Desktop\MIS Team\Output\AuA_TMP.csv]
+(txt,delimiter is ',');
+
+AuA_Pivot:
+LOAD 
+     ApplyMap('Partner_Pivot_Map',Partner,Partner) as Representative,
+     ApplyMap('Group_Pivot_Map',Partner,Partner) as Group,
+     ApplyMap('SubGroup_Pivot_Map',Partner,Partner) as SubGroup,
+     ApplyMap('Region_Pivot_Map',Partner,Partner) as Region,
+     ApplyMap('Node_Pivot_Map',Partner,Partner) as Node,
+     ProductProvider as [Service Provider], 
+     AssetValue as FUA,
+     [Type],
+     DateMonth as Month,
+     check,
+     [Exclude Cash],
+     FSP as BrokerHouse
+     
+FROM
+[C:\Users\HenryM\Desktop\MIS Team\Output\AuA_TMP.csv]
+(txt, utf8, embedded labels, delimiter is ',', msq);
+
+
